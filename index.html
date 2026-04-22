@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2E7D32">
+<title>Jampa Caçambas</title>
+<link rel="icon" type="image/png" href="assets/logo.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --or:#2E7D32;--orl:#E8F5E9;--ord:#1B5E20;
+  --gr:#2E7D32;--grl:#E8F5E9;--grd:#1B5E20;
+  --bl:#185FA5;--bll:#E6F1FB;--bld:#0C447C;
+  --am:#854F0B;--aml:#FAEEDA;--amd:#412402;
+  --re:#A32D2D;--rel:#FCEBEB;--red:#501313;
+  --gy:#888780;--gyl:#F1EFE8;--gyd:#2C2C2A;
+  --bg:#fff;--sf:#F8F7F4;--br:#e2e0d8;--tx:#1a1917;--mu:#6b6963;
+}
+body{background:var(--sf);color:var(--tx);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ── HEADER ── */
+.hdr{background:var(--or);color:#fff;padding:13px 15px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+.hdr h1{font-size:15px;font-weight:700;flex:1}
+.hdr small{font-size:11px;opacity:.8}
+.hdr-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:5px 11px;border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap}
+.hdr-btn:active{background:rgba(255,255,255,.35)}
+.body{padding:13px;flex:1;display:flex;flex-direction:column;gap:11px}
+
+/* ── LOGIN ── */
+.login-wrap{flex:1;display:flex;flex-direction:column;padding:24px 20px 32px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .truck{font-size:48px;display:block;margin-bottom:10px}
+.login-logo h1{font-size:22px;font-weight:800;color:var(--or);letter-spacing:-.5px}
+.login-logo p{font-size:13px;color:var(--mu);margin-top:4px}
+.login-section-label{font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.driver-btn{background:var(--bg);border:1.5px solid var(--br);border-radius:13px;padding:15px;font-size:15px;font-weight:600;color:var(--tx);cursor:pointer;display:flex;align-items:center;gap:11px;width:100%;transition:all .15s;margin-bottom:8px}
+.driver-btn:last-child{margin-bottom:0}
+.driver-btn:active{background:var(--orl);border-color:var(--or)}
+.driver-btn.admin-btn{border-color:var(--gyd);background:var(--gyd);color:#fff}
+.driver-btn.admin-btn:active{background:#1a1917}
+.dav{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.dav.driver{background:var(--orl);color:var(--ord)}
+.dav.admin{background:rgba(255,255,255,.15);color:#fff}
+.dcnt{margin-left:auto;font-size:11px;background:var(--sf);color:var(--mu);padding:3px 9px;border-radius:20px}
+.dcnt.admin-cnt{background:rgba(255,255,255,.15);color:rgba(255,255,255,.8)}
+
+/* Admin password modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--bg);border-radius:18px;padding:24px 20px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal h2{font-size:17px;font-weight:800;color:var(--tx);margin-bottom:4px}
+.modal p{font-size:13px;color:var(--mu);margin-bottom:18px}
+.modal input{width:100%;border:2px solid var(--br);border-radius:11px;padding:13px 14px;font-size:18px;color:var(--tx);background:var(--sf);outline:none;letter-spacing:4px;text-align:center;margin-bottom:8px}
+.modal input:focus{border-color:var(--or)}
+.modal input.error{border-color:var(--re);background:var(--rel)}
+.modal-err{font-size:12px;color:var(--re);font-weight:600;text-align:center;margin-bottom:12px;min-height:16px}
+.modal-btns{display:flex;gap:8px}
+.modal-cancel{flex:1;background:var(--sf);border:1px solid var(--br);border-radius:11px;padding:13px;font-size:14px;font-weight:600;color:var(--mu);cursor:pointer}
+.modal-confirm{flex:1;background:var(--or);border:none;border-radius:11px;padding:13px;font-size:14px;font-weight:700;color:#fff;cursor:pointer}
+.modal-confirm:active{background:var(--ord)}
+
+/* ── DRIVER SCREEN ── */
+.day-nav{background:var(--bg);border:1px solid var(--br);border-radius:13px;padding:10px 13px;display:flex;align-items:center;gap:8px}
+.nav-btn{background:var(--sf);border:1px solid var(--br);border-radius:9px;padding:8px 12px;font-size:15px;cursor:pointer;color:var(--tx);flex-shrink:0}
+.nav-btn:active{background:var(--orl);border-color:var(--or)}
+.day-display{flex:1;text-align:center}
+.day-label{font-size:13px;font-weight:700;color:var(--tx)}
+.day-sub{font-size:11px;color:var(--mu);margin-top:1px}
+.today-badge{font-size:10px;font-weight:700;background:var(--or);color:#fff;border-radius:20px;padding:1px 7px;margin-left:5px}
+input[type=date].dp{border:1px solid var(--br);border-radius:9px;padding:7px 10px;font-size:12px;color:var(--tx);background:var(--sf);outline:none;cursor:pointer;width:100%}
+input[type=date].dp:focus{border-color:var(--or)}
+.sec{background:var(--bg);border-radius:13px;overflow:hidden;border:1px solid var(--br)}
+.sech{padding:11px 13px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--br)}
+.sech-e{background:var(--bll)}.sech-e .sect{color:var(--bld)}.sech-e .secb{background:var(--bl);color:#fff}
+.sech-r{background:var(--grl)}.sech-r .sect{color:var(--grd)}.sech-r .secb{background:var(--gr);color:#fff}
+.sech-t{background:var(--aml)}.sech-t .sect{color:var(--amd)}.sech-t .secb{background:var(--am);color:#fff}
+.sect{font-size:13px;font-weight:700;flex:1}.secb{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.svi{padding:12px 13px;display:flex;align-items:flex-start;gap:10px;border-bottom:.5px solid var(--br)}
+.svi:last-child{border-bottom:none}.svi.done{opacity:.4}
+.svi-info{flex:1;min-width:0}
+.svi-addr{font-size:14px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.svi-type{font-size:11px;color:var(--mu);margin-top:2px;font-weight:600}
+.cab-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.cab-tag{display:inline-flex;align-items:center;background:var(--sf);border:1px solid var(--br);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;color:var(--gyd)}
+.okb{width:46px;height:46px;border-radius:50%;border:none;background:var(--gr);color:#fff;font-size:19px;cursor:pointer;flex-shrink:0;margin-top:2px;transition:transform .1s}
+.okb:active{transform:scale(.88)}.okb.done{background:var(--gyl);color:var(--gy)}
+.okb.disabled{background:var(--gyl);color:var(--gy);cursor:not-allowed}
+.svc-cab-box{margin-top:7px;border:1px dashed var(--br);border-radius:9px;padding:7px 8px;background:var(--sf)}
+.svc-cab-box .cab-chips{margin-bottom:6px}
+.svc-cab-box .cab-chips:empty{margin-bottom:0}
+.cab-empty-note{font-size:11px;color:var(--am);font-weight:600;background:var(--aml);border-radius:6px;padding:4px 7px;margin-top:6px;display:inline-block}
+.no-data{padding:24px;text-align:center;color:var(--mu);font-size:13px;background:var(--bg);border-radius:13px;border:1px solid var(--br)}
+
+/* ── ADMIN ── */
+.tabs{display:flex;background:var(--sf);border-bottom:1px solid var(--br)}
+.tab{flex:1;padding:10px 3px;font-size:11px;font-weight:600;color:var(--mu);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{color:var(--or);border-bottom-color:var(--or);background:var(--bg)}
+.tc{display:none}.tc.active{display:flex;flex-direction:column;gap:11px}
+.card{background:var(--bg);border:1px solid var(--br);border-radius:13px;overflow:hidden}
+.ctit{font-size:13px;font-weight:700;padding:11px 13px;border-bottom:1px solid var(--br);background:var(--sf)}
+.fg{padding:9px 13px;display:flex;flex-direction:column;gap:4px;border-bottom:.5px solid var(--br)}
+.fg label{font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.4px}
+.fg input,.fg select{border:1.5px solid var(--br);border-radius:9px;padding:9px 11px;font-size:14px;color:var(--tx);background:var(--bg);outline:none;width:100%}
+.fg input:focus,.fg select:focus{border-color:var(--or)}
+.sub-btn{margin:0 13px 13px;background:var(--or);color:#fff;border:none;border-radius:11px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;width:calc(100% - 26px)}
+.sub-btn:active{background:var(--ord)}
+.cab-input-area{padding:9px 13px;border-bottom:.5px solid var(--br)}
+.cab-input-area label{font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px}
+.cab-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px}
+.cab-chip{display:inline-flex;align-items:center;gap:5px;background:var(--orl);border:1px solid var(--or);border-radius:7px;padding:4px 9px;font-size:12px;font-weight:700;color:var(--ord)}
+.cab-chip button{background:none;border:none;color:var(--or);cursor:pointer;font-size:13px;line-height:1;padding:0}
+.cab-add-row{display:flex;gap:6px}
+.cnin{flex:1;border:1.5px solid var(--br);border-radius:9px;padding:9px 11px;font-size:14px;color:var(--tx);background:var(--bg);outline:none}
+.cnin:focus{border-color:var(--or)}
+.cab-add-btn{background:var(--or);color:#fff;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:700;cursor:pointer}
+.asi{padding:10px 13px;display:flex;align-items:flex-start;gap:8px;border-bottom:.5px solid var(--br)}
+.asi:last-child{border-bottom:none}
+.asib{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0;margin-top:2px;white-space:nowrap}
+.asib.entrega{background:var(--bll);color:var(--bld)}.asib.retirada{background:var(--grl);color:var(--grd)}.asib.troca{background:var(--aml);color:var(--amd)}
+.asi-inf{flex:1;min-width:0}
+.asi-addr{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.asi-meta{font-size:11px;color:var(--mu);margin-top:1px}
+.as-st{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+.as-st.p{background:var(--sf);color:var(--mu)}.as-st.d{background:var(--grl);color:var(--grd)}
+.del-btn{background:none;border:none;color:var(--re);font-size:13px;cursor:pointer;padding:2px;flex-shrink:0}
+.dr-row{display:flex;align-items:center;gap:7px;padding:8px 13px;border-bottom:.5px solid var(--br)}
+.dr-row:last-child{border-bottom:none}
+.dr-inp{flex:1;border:1.5px solid var(--br);border-radius:9px;padding:8px 11px;font-size:13px;background:var(--bg);outline:none;color:var(--tx)}
+.dr-inp:focus{border-color:var(--or)}
+.rm-btn{background:var(--rel);color:var(--red);border:none;border-radius:9px;padding:8px 11px;font-size:12px;cursor:pointer}
+.add-area{padding:9px 13px;display:flex;gap:7px}
+.nd-inp{flex:1;border:1.5px dashed var(--br);border-radius:9px;padding:8px 11px;font-size:13px;background:var(--sf);outline:none;color:var(--tx)}
+.nd-inp:focus{border-color:var(--or)}
+.add-btn{background:var(--or);color:#fff;border:none;border-radius:9px;padding:8px 13px;font-size:12px;font-weight:700;cursor:pointer}
+/* password change */
+.pw-section{padding:13px;display:flex;flex-direction:column;gap:8px}
+.pw-inp{border:1.5px solid var(--br);border-radius:9px;padding:10px 12px;font-size:14px;color:var(--tx);background:var(--bg);outline:none;width:100%}
+.pw-inp:focus{border-color:var(--or)}
+.pw-btn{background:var(--gyd);color:#fff;border:none;border-radius:9px;padding:11px;font-size:13px;font-weight:700;cursor:pointer}
+.pw-btn:active{background:#111}
+
+/* REPORTS */
+.rpt-filters{background:var(--bg);border:1px solid var(--br);border-radius:13px;padding:13px;display:flex;flex-direction:column;gap:9px}
+.filter-row{display:flex;gap:7px}
+.filter-row select,.filter-row input{flex:1;border:1.5px solid var(--br);border-radius:9px;padding:8px 11px;font-size:13px;color:var(--tx);background:var(--bg);outline:none}
+.filter-row select:focus,.filter-row input:focus{border-color:var(--or)}
+.rpt-btn{background:var(--or);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.stat-card{background:var(--bg);border:1px solid var(--br);border-radius:11px;padding:11px 13px}
+.stat-label{font-size:10px;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.stat-val{font-size:24px;font-weight:700;color:var(--tx)}
+.stat-val.ok{color:var(--gr)}.stat-val.pend{color:var(--re)}
+.rpt-section{background:var(--bg);border:1px solid var(--br);border-radius:13px;overflow:hidden}
+.rpt-sech{padding:10px 13px;font-size:13px;font-weight:700;border-bottom:1px solid var(--br);display:flex;align-items:center;gap:7px;background:var(--sf)}
+.rpt-row{padding:9px 13px;display:flex;align-items:flex-start;gap:7px;border-bottom:.5px solid var(--br)}
+.rpt-row:last-child{border-bottom:none}
+.rpt-row-info{flex:1;min-width:0}
+.rpt-addr{font-size:13px;font-weight:600}
+.rpt-meta{font-size:11px;color:var(--mu);margin-top:1px}
+.rpt-st{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;flex-shrink:0;margin-top:2px;white-space:nowrap}
+.rpt-st.done{background:var(--grl);color:var(--grd)}.rpt-st.pend{background:var(--rel);color:var(--red)}
+.exp-row{display:flex;gap:7px}
+.exp-btn{flex:1;border:1.5px solid var(--br);background:var(--bg);color:var(--tx);border-radius:10px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+.exp-btn:active{background:var(--sf)}.exp-btn.pdf{border-color:var(--re);color:var(--red)}.exp-btn.xls{border-color:var(--gr);color:var(--grd)}
+.bdc-row{padding:8px 13px;border-bottom:.5px solid var(--br);display:flex;align-items:center;gap:8px}
+.bdc-row:last-child{border-bottom:none}
+.progress-bar{height:4px;background:var(--br);border-radius:3px;overflow:hidden;margin-top:5px}
+.progress-fill{height:100%;background:var(--gr);border-radius:3px}
+.no-data{padding:24px;text-align:center;color:var(--mu);font-size:13px}
+.divider{height:1px;background:var(--br);margin:8px 0}
+.role-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:auto}
+.role-badge.admin{background:var(--gyd);color:#fff}
+.role-badge.driver{background:var(--orl);color:var(--ord)}
+
+/* ── LOGO ── */
+.login-logo-img{display:block;margin:0 auto 14px;width:150px;max-width:60%;height:auto;filter:drop-shadow(0 4px 10px rgba(27,94,32,.18));border-radius:12px;background:#fff;padding:10px 16px}
+.hdr-logo{width:36px;height:36px;object-fit:contain;background:#fff;border-radius:8px;padding:3px;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.login-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px 20px 30px;background:linear-gradient(180deg,#fff 0%,var(--grl) 100%);border-bottom:1px solid var(--br)}
+.login-hero h1{font-size:24px;font-weight:800;color:var(--grd);letter-spacing:-.5px;text-align:center}
+.login-hero p{font-size:12px;color:var(--mu);margin-top:6px;text-align:center}
+</style>
+
+<!-- PASSWORD MODAL -->
+<div class="modal-overlay hidden" id="pw-modal">
+  <div class="modal">
+    <h2 id="pw-modal-title">🔐 Acesso</h2>
+    <p id="pw-modal-sub">Digite a senha para continuar</p>
+    <input type="password" id="pw-input" placeholder="••••" onkeydown="if(event.key==='Enter')checkPw()" autocomplete="off">
+    <div class="modal-err" id="pw-err"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closePwModal()">Cancelar</button>
+      <button class="modal-confirm" onclick="checkPw()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: LOGIN -->
+<div id="s-login" class="screen active">
+  <div class="login-hero">
+    <img src="assets/logo.png" alt="Jampa Caçambas" class="login-logo-img">
+    <h1>Jampa Caçambas</h1>
+    <p id="login-date"></p>
+  </div>
+  <div style="padding:20px;flex:1;display:flex;flex-direction:column;gap:0;background:#fff">
+    <div class="login-section-label" style="margin-bottom:10px">Selecione seu perfil</div>
+    <div id="login-driver-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="divider" style="margin:16px 0"></div>
+    <button class="driver-btn admin-btn" onclick="openPwModal()">
+      <div class="dav admin">⚙️</div>
+      <span>Administrador</span>
+      <span class="dcnt admin-cnt">🔐 Senha</span>
+    </button>
+  </div>
+</div>
+
+<!-- SCREEN: DRIVER -->
+<div id="s-driver" class="screen">
+  <div class="hdr">
+    <img src="assets/logo.png" alt="Jampa Caçambas" class="hdr-logo">
+    <div style="flex:1">
+      <h1 id="drv-name-hdr"></h1>
+      <small id="drv-sum"></small>
+    </div>
+    <button class="hdr-btn" onclick="logout()">Sair</button>
+  </div>
+  <div class="body">
+    <div class="day-nav">
+      <button class="nav-btn" onclick="changeDay(-1)">‹</button>
+      <div class="day-display">
+        <div class="day-label" id="day-label"></div>
+        <div class="day-sub" id="day-sub"></div>
+      </div>
+      <button class="nav-btn" onclick="changeDay(1)">›</button>
+    </div>
+    <input type="date" class="dp" id="date-picker" onchange="setDay(this.value)">
+    <div id="drv-body" style="display:flex;flex-direction:column;gap:11px"></div>
+  </div>
+</div>
+
+<!-- SCREEN: ADMIN -->
+<div id="s-admin" class="screen">
+  <div class="hdr">
+    <img src="assets/logo.png" alt="Jampa Caçambas" class="hdr-logo">
+    <div style="flex:1">
+      <h1>Painel Administrativo</h1>
+      <small>Jampa Caçambas · Administrador</small>
+    </div>
+    <button class="hdr-btn" onclick="logout()">Sair</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="stab('t-add',0)">+ Novo</button>
+    <button class="tab" onclick="stab('t-list',1)">📋 Serviços</button>
+    <button class="tab" onclick="stab('t-drv',2)">👷 Equipe</button>
+    <button class="tab" onclick="stab('t-rpt',3)">📊 Relatório</button>
+    <button class="tab" onclick="stab('t-cfg',4)">⚙️ Config</button>
+  </div>
+  <div class="body" style="padding-top:11px">
+
+    <!-- ADD SERVICE -->
+    <div id="t-add" class="tc active">
+      <div class="card">
+        <div class="ctit">Cadastrar Novo Serviço</div>
+        <div class="fg"><label>Data do serviço *</label><input type="date" id="f-date"></div>
+        <div class="fg"><label>Cliente (opcional)</label><input type="text" id="f-cl" placeholder="Nome do cliente"></div>
+        <div class="fg"><label>Endereço *</label><input type="text" id="f-ad" placeholder="Rua, número, bairro"></div>
+        <div class="fg"><label>Tipo de serviço *</label>
+          <select id="f-tp"><option value="">Selecione...</option><option value="entrega">📦 Entrega</option><option value="retirada">♻️ Retirada</option><option value="troca">🔄 Troca</option></select>
+        </div>
+        <div class="cab-input-area">
+          <label>Caçambas <span style="font-weight:400;color:var(--mu);text-transform:none;letter-spacing:0">(opcional — o motorista poderá adicionar na tela dele)</span></label>
+          <div class="cab-chips" id="cab-chips"></div>
+          <div class="cab-add-row">
+            <input class="cnin" id="cab-in" type="text" placeholder="Nº da caçamba (ex: 101)" onkeydown="if(event.key==='Enter'){event.preventDefault();addChip()}">
+            <button class="cab-add-btn" onclick="addChip()">+ Adicionar</button>
+          </div>
+        </div>
+        <div class="fg" style="border-bottom:none"><label>Motorista *</label><select id="f-dr"><option value="">Selecione...</option></select></div>
+        <button class="sub-btn" id="sub-btn" onclick="addService()">Cadastrar Serviço</button>
+      </div>
+    </div>
+
+    <!-- LIST -->
+    <div id="t-list" class="tc">
+      <div style="display:flex;gap:7px">
+        <select id="filter-drv" style="flex:1;border:1.5px solid var(--br);border-radius:9px;padding:8px 11px;font-size:13px;color:var(--tx);background:var(--bg);outline:none" onchange="renderAdminList()">
+          <option value="">Todos os motoristas</option>
+        </select>
+        <input type="date" id="filter-date" style="flex:1;border:1.5px solid var(--br);border-radius:9px;padding:8px 11px;font-size:13px;color:var(--tx);background:var(--bg);outline:none" onchange="renderAdminList()">
+      </div>
+      <div class="card"><div class="ctit">Serviços</div><div id="admin-list"></div></div>
+    </div>
+
+    <!-- TEAM -->
+    <div id="t-drv" class="tc">
+      <div class="card">
+        <div class="ctit">Motoristas da Equipe</div>
+        <div id="drv-admin"></div>
+        <div class="add-area" style="flex-wrap:wrap;gap:7px">
+          <input class="nd-inp" id="nd-inp" placeholder="Nome do motorista" style="flex:1 1 100%">
+          <input class="nd-inp" id="nd-pw-inp" type="password" placeholder="Senha (mín. 3 caracteres)" autocomplete="new-password" onkeydown="if(event.key==='Enter')addDriver()" style="flex:1 1 100%">
+          <button class="add-btn" onclick="addDriver()" style="flex:1 1 100%">+ Adicionar Motorista</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT -->
+    <div id="t-rpt" class="tc">
+      <div class="rpt-filters">
+        <div class="filter-row">
+          <select id="rpt-driver"><option value="">Todos os motoristas</option></select>
+          <select id="rpt-period">
+            <option value="today">Hoje</option>
+            <option value="week">Esta semana</option>
+            <option value="month">Este mês</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        <div class="filter-row" id="custom-dates" style="display:none">
+          <input type="date" id="rpt-from"><input type="date" id="rpt-to">
+        </div>
+        <button class="rpt-btn" onclick="genReport()">📊 Gerar Relatório</button>
+      </div>
+      <div class="exp-row" id="exp-row" style="display:none">
+        <button class="exp-btn pdf" onclick="exportPDF()">🖨️ Exportar PDF</button>
+        <button class="exp-btn xls" onclick="exportCSV()">📥 Exportar Excel</button>
+      </div>
+      <div id="rpt-out"></div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="t-cfg" class="tc">
+      <div class="card">
+        <div class="ctit">🔐 Alterar Senha do Administrador</div>
+        <div class="pw-section">
+          <div style="font-size:12px;color:var(--mu);margin-bottom:4px">Senha atual padrão: <strong>1234</strong></div>
+          <input class="pw-inp" type="password" id="pw-cur" placeholder="Senha atual">
+          <input class="pw-inp" type="password" id="pw-new" placeholder="Nova senha">
+          <input class="pw-inp" type="password" id="pw-new2" placeholder="Confirmar nova senha">
+          <button class="pw-btn" onclick="changePw()">Salvar Nova Senha</button>
+          <div id="pw-msg" style="font-size:12px;text-align:center;min-height:16px"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const TODAY = new Date().toISOString().split('T')[0];
+
+let ST = JSON.parse(localStorage.getItem('cacamba_v4')||'null') || {
+  drivers: [
+    {name:'Carlos',password:'1234'},
+    {name:'Marcos',password:'1234'},
+    {name:'Rafael',password:'1234'},
+    {name:'Leandro',password:'1234'}
+  ],
+  services: [],
+  adminPw: '1234'
+};
+function save(){localStorage.setItem('cacamba_v4',JSON.stringify(ST))}
+// Migration: convert legacy string-based drivers to {name,password}
+if(Array.isArray(ST.drivers)){
+  ST.drivers = ST.drivers.map(d => typeof d === 'string' ? {name:d, password:'1234'} : {name:d.name, password:(d.password&&d.password.length>=3)?d.password:'1234'});
+}
+save();
+
+let currentDriverName = '';
+let currentDay = TODAY;
+let pendingChips = [];
+let currentUser = null; // {name, role: 'driver'|'admin'}
+let pwModalTarget = null; // {type:'admin'} | {type:'driver', name}
+
+// Seed demo
+if(!ST.services.length){
+  const types=['entrega','retirada','troca'];
+  const addrs=['Rua das Flores, 123','Av. Brasil, 456','Rua 7 de Setembro, 89','Rua Ipiranga, 320','Av. Paulista, 1000','Rua Augusta, 55','Rua Consolação, 210'];
+  const cabSets=[['42'],['101','102'],['55'],['78','79','80'],['91'],['07','08'],['43','44','45']];
+  for(let i=0;i<8;i++){
+    ST.services.push({id:'d'+i,client:'',address:addrs[i%addrs.length],type:types[i%3],cacambas:cabSets[i%cabSets.length],driver:ST.drivers[i%ST.drivers.length].name,done:i<2,serviceDate:TODAY});
+  }
+  const yd=new Date();yd.setDate(yd.getDate()-1);const yday=yd.toISOString().split('T')[0];
+  ST.services.push({id:'dp1',client:'',address:'Rua Ontem, 999',type:'retirada',cacambas:['55','56'],driver:ST.drivers[0].name,done:true,serviceDate:yday});
+  save();
+}
+
+// ── MODAL ──
+function _resetPwModal(){
+  document.getElementById('pw-input').value='';
+  document.getElementById('pw-err').textContent='';
+  document.getElementById('pw-input').classList.remove('error');
+  document.getElementById('pw-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('pw-input').focus(),100);
+}
+function openPwModal(){
+  pwModalTarget={type:'admin'};
+  document.getElementById('pw-modal-title').textContent='🔐 Acesso Administrativo';
+  document.getElementById('pw-modal-sub').textContent='Digite a senha para continuar';
+  _resetPwModal();
+}
+function openDriverPwModal(name){
+  pwModalTarget={type:'driver',name};
+  document.getElementById('pw-modal-title').textContent='👷 '+name;
+  document.getElementById('pw-modal-sub').textContent='Digite sua senha para entrar';
+  _resetPwModal();
+}
+function closePwModal(){pwModalTarget=null;document.getElementById('pw-modal').classList.add('hidden');}
+function checkPw(){
+  const val=document.getElementById('pw-input').value;
+  let ok=false;
+  if(pwModalTarget&&pwModalTarget.type==='admin'){
+    ok=(val===ST.adminPw);
+  } else if(pwModalTarget&&pwModalTarget.type==='driver'){
+    const d=ST.drivers.find(x=>x.name===pwModalTarget.name);
+    ok=!!(d && d.password===val);
+  }
+  if(ok){
+    const target=pwModalTarget;
+    closePwModal();
+    if(target.type==='admin'){
+      currentUser={name:'Administrador',role:'admin'};
+      goAdmin();
+    } else {
+      goDriver(target.name);
+    }
+  } else {
+    document.getElementById('pw-err').textContent='Senha incorreta. Tente novamente.';
+    document.getElementById('pw-input').classList.add('error');
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+    setTimeout(()=>{document.getElementById('pw-input').classList.remove('error');document.getElementById('pw-err').textContent='';},2000);
+  }
+}
+
+// ── NAV ──
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function logout(){currentUser=null;currentDriverName='';showScreen('s-login');renderLogin();}
+
+function goAdmin(){
+  showScreen('s-admin');
+  renderAdminDriverSelect();
+  document.getElementById('f-date').value=TODAY;
+  document.getElementById('filter-date').value='';
+  renderAdminList();
+  renderRptFilters();
+  pendingChips=[];renderChips();
+}
+
+function goDriver(name){
+  currentDriverName=name;
+  currentDay=TODAY;
+  currentUser={name,role:'driver'};
+  showScreen('s-driver');
+  document.getElementById('drv-name-hdr').textContent='👷 '+name;
+  document.getElementById('date-picker').value=TODAY;
+  renderDriver();
+}
+
+function stab(id,idx){
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  if(id==='t-list')renderAdminList();
+  if(id==='t-drv')renderDrvAdmin();
+  if(id==='t-rpt'){renderRptFilters();document.getElementById('rpt-out').innerHTML='';document.getElementById('exp-row').style.display='none';}
+}
+
+// ── LOGIN ──
+function renderLogin(){
+  const d=new Date();
+  document.getElementById('login-date').textContent=d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const list=document.getElementById('login-driver-list');list.innerHTML='';
+  ST.drivers.forEach(drv=>{
+    const name=drv.name;
+    const pend=ST.services.filter(s=>s.driver===name&&!s.done&&s.serviceDate===TODAY).length;
+    const init=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const btn=document.createElement('button');btn.className='driver-btn';
+    btn.innerHTML=`<div class="dav driver">${init}</div><span>${name}</span><span class="dcnt">${pend} pendente${pend!==1?'s':''} hoje</span>`;
+    btn.onclick=()=>openDriverPwModal(name);
+    list.appendChild(btn);
+  });
+}
+
+// ── DAY NAV ──
+function changeDay(delta){const d=new Date(currentDay+'T12:00:00');d.setDate(d.getDate()+delta);currentDay=d.toISOString().split('T')[0];document.getElementById('date-picker').value=currentDay;renderDriver();}
+function setDay(val){currentDay=val;renderDriver();}
+function dayLabel(ds){
+  const d=new Date(ds+'T12:00:00'),diff=Math.round((d-new Date(TODAY+'T12:00:00'))/(864e5));
+  const wd=d.toLocaleDateString('pt-BR',{weekday:'long'}),dm=d.toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
+  const main=diff===0?(wd.charAt(0).toUpperCase()+wd.slice(1)):diff===-1?'Ontem':diff===1?'Amanhã':(wd.charAt(0).toUpperCase()+wd.slice(1));
+  return{main,sub:dm,today:diff===0};
+}
+
+// ── DRIVER SCREEN ──
+function renderDriver(){
+  const lbl=dayLabel(currentDay);
+  document.getElementById('day-label').innerHTML=lbl.main+(lbl.today?'<span class="today-badge">Hoje</span>':'');
+  document.getElementById('day-sub').textContent=lbl.sub;
+  const svcs=ST.services.filter(s=>s.driver===currentDriverName&&s.serviceDate===currentDay);
+  const pend=svcs.filter(s=>!s.done).length;
+  document.getElementById('drv-sum').textContent=`${pend} pendente${pend!==1?'s':''} de ${svcs.length} neste dia`;
+  const body=document.getElementById('drv-body');body.innerHTML='';
+  const secs=[{k:'entrega',l:'Entregas',i:'📦',c:'e'},{k:'retirada',l:'Retiradas',i:'♻️',c:'r'},{k:'troca',l:'Trocas',i:'🔄',c:'t'}];
+  secs.forEach(sec=>{
+    const items=svcs.filter(s=>s.type===sec.k);if(!items.length)return;
+    const pn=items.filter(s=>!s.done).length;
+    const bl=document.createElement('div');bl.className='sec';
+    bl.innerHTML=`<div class="sech sech-${sec.c}"><span>${sec.i}</span><span class="sect">${sec.l}</span><span class="secb">${pn}/${items.length}</span></div>`;
+    [...items.filter(s=>!s.done),...items.filter(s=>s.done)].forEach(sv=>{
+      const cabs=Array.isArray(sv.cacambas)?sv.cacambas:(sv.num?[sv.num]:[]);
+      const it=document.createElement('div');it.className='svi'+(sv.done?' done':'');
+      let cabSection;
+      if(sv.done){
+        const cabHtml=cabs.length?cabs.map(c=>`<span class="cab-tag">🟫 ${c}</span>`).join(''):'<span style="font-size:11px;color:var(--mu)">sem caçamba</span>';
+        cabSection=`<div class="cab-row">${cabHtml}</div>`;
+      } else {
+        const chipsHtml=cabs.map((c,i)=>`<span class="cab-chip">🟫 ${c} <button type="button" onclick="removeCabFromSvc('${sv.id}',${i})">×</button></span>`).join('');
+        const emptyNote=cabs.length?'':'<div class="cab-empty-note">⚠️ Adicione pelo menos uma caçamba para concluir</div>';
+        cabSection=`<div class="svc-cab-box"><div class="cab-chips">${chipsHtml}</div><div class="cab-add-row"><input class="cnin" id="svc-in-${sv.id}" type="text" inputmode="numeric" placeholder="Nº da caçamba" onkeydown="if(event.key==='Enter'){event.preventDefault();addCabToSvc('${sv.id}')}"><button class="cab-add-btn" type="button" onclick="addCabToSvc('${sv.id}')">+ Caçamba</button></div>${emptyNote}</div>`;
+      }
+      const canComplete = sv.done || cabs.length>0;
+      const btnClass = sv.done ? 'okb done' : (canComplete ? 'okb' : 'okb disabled');
+      const typeLabel={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[sv.type];
+      const cabCount=cabs.length?` · ${cabs.length} caçamba${cabs.length!==1?'s':''}`:' · 0 caçambas';
+      it.innerHTML=`<div class="svi-info"><div class="svi-addr">${sv.address}</div><div class="svi-type">${typeLabel}${cabCount}</div>${sv.client?`<div style="font-size:11px;color:var(--mu);margin-top:3px">👤 ${sv.client}</div>`:''}${cabSection}</div><button class="${btnClass}" onclick="toggle('${sv.id}')">✓</button>`;
+      bl.appendChild(it);
+    });
+    body.appendChild(bl);
+  });
+  if(!svcs.length)body.innerHTML='<div class="no-data">Nenhum serviço para este dia.<br><span style="font-size:12px">Use ‹ › para navegar entre os dias.</span></div>';
+}
+function addCabToSvc(id){
+  const inp=document.getElementById('svc-in-'+id);if(!inp)return;
+  const v=inp.value.trim();if(!v)return;
+  const sv=ST.services.find(x=>x.id===id);if(!sv)return;
+  if(!Array.isArray(sv.cacambas))sv.cacambas=[];
+  if(sv.cacambas.includes(v)){alert('Caçamba '+v+' já adicionada.');return;}
+  sv.cacambas.push(v);
+  save();renderDriver();
+}
+function removeCabFromSvc(id,idx){
+  const sv=ST.services.find(x=>x.id===id);if(!sv||!Array.isArray(sv.cacambas))return;
+  sv.cacambas.splice(idx,1);
+  save();renderDriver();
+}
+function toggle(id){
+  const s=ST.services.find(x=>x.id===id);if(!s)return;
+  if(!s.done){
+    const cabs=Array.isArray(s.cacambas)?s.cacambas:[];
+    if(!cabs.length){alert('Adicione pelo menos uma caçamba antes de concluir o serviço.');return;}
+  }
+  s.done=!s.done;save();renderDriver();
+}
+
+// ── CHIPS ──
+function renderChips(){
+  const area=document.getElementById('cab-chips');area.innerHTML='';
+  area.style.marginBottom=pendingChips.length?'7px':'0';
+  pendingChips.forEach((c,i)=>{const ch=document.createElement('span');ch.className='cab-chip';ch.innerHTML=`${c} <button onclick="removeChip(${i})">×</button>`;area.appendChild(ch);});
+}
+function addChip(){const inp=document.getElementById('cab-in');const v=inp.value.trim();if(!v)return;if(pendingChips.includes(v)){alert('Já adicionada.');return;}pendingChips.push(v);inp.value='';inp.focus();renderChips();}
+function removeChip(i){pendingChips.splice(i,1);renderChips();}
+
+// ── ADMIN CRUD ──
+function renderAdminDriverSelect(){
+  ['f-dr','filter-drv','rpt-driver'].forEach(sid=>{
+    const sel=document.getElementById(sid);if(!sel)return;
+    const v=sel.value;
+    sel.innerHTML=sid==='f-dr'?'<option value="">Selecione...</option>':'<option value="">Todos os motoristas</option>';
+    ST.drivers.forEach(d=>{const o=document.createElement('option');o.value=d.name;o.textContent=d.name;sel.appendChild(o);});
+    sel.value=v;
+  });
+}
+
+function renderAdminList(){
+  const list=document.getElementById('admin-list');if(!list)return;
+  const drvF=document.getElementById('filter-drv').value;
+  const dateF=document.getElementById('filter-date').value;
+  let svcs=ST.services.filter(s=>(!drvF||s.driver===drvF)&&(!dateF||s.serviceDate===dateF));
+  if(!svcs.length){list.innerHTML='<div class="no-data" style="border:none">Nenhum serviço encontrado.</div>';return;}
+  list.innerHTML='';
+  [...svcs].reverse().forEach(sv=>{
+    const lbl={entrega:'📦 Entrega',retirada:'♻️ Retirada',troca:'🔄 Troca'}[sv.type];
+    const cabs=sv.cacambas||[sv.num||'?'];
+    const cabHtml=cabs.map(c=>`<span class="cab-tag" style="font-size:10px;padding:1px 5px">${c}</span>`).join('');
+    const it=document.createElement('div');it.className='asi';
+    it.innerHTML=`<span class="asib ${sv.type}">${lbl}</span><div class="asi-inf"><div class="asi-addr">${sv.address}</div><div class="asi-meta">${sv.serviceDate} · ${sv.driver}${sv.client?' · '+sv.client:''}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${cabHtml}</div></div><span class="as-st ${sv.done?'d':'p'}">${sv.done?'Feito':'Pend.'}</span><button class="del-btn" onclick="delSvc('${sv.id}')">🗑</button>`;
+    list.appendChild(it);
+  });
+}
+
+function renderDrvAdmin(){
+  const list=document.getElementById('drv-admin');if(!list)return;list.innerHTML='';
+  ST.drivers.forEach((d,i)=>{
+    const r=document.createElement('div');r.className='dr-row';
+    r.style.flexWrap='wrap';
+    r.style.gap='6px';
+    const nameSafe=(d.name||'').replace(/"/g,'&quot;');
+    const pwSafe=(d.password||'').replace(/"/g,'&quot;');
+    r.innerHTML=`
+      <div style="display:flex;gap:7px;width:100%;align-items:center">
+        <input class="dr-inp" placeholder="Nome" value="${nameSafe}" onchange="updateDriverName(${i},this.value)" style="flex:1">
+        <button class="rm-btn" onclick="rmDrv(${i})">✕</button>
+      </div>
+      <input class="dr-inp" type="password" placeholder="Senha (mín. 3)" value="${pwSafe}" autocomplete="new-password" onchange="updateDriverPassword(${i},this.value)" style="width:100%">
+    `;
+    list.appendChild(r);
+  });
+}
+function updateDriverName(i,v){
+  const nv=(v||'').trim();
+  if(!nv){alert('O nome não pode ficar vazio.');renderDrvAdmin();return;}
+  const old=ST.drivers[i].name;
+  if(old===nv)return;
+  if(ST.drivers.some((x,j)=>j!==i&&x.name===nv)){alert('Já existe um motorista com esse nome.');renderDrvAdmin();return;}
+  ST.drivers[i].name=nv;
+  ST.services.forEach(s=>{if(s.driver===old)s.driver=nv;});
+  save();renderAdminDriverSelect();renderAdminList();renderLogin();
+}
+function updateDriverPassword(i,v){
+  const nv=(v||'').trim();
+  if(!nv||nv.length<3){alert('A senha deve ter no mínimo 3 caracteres.');renderDrvAdmin();return;}
+  ST.drivers[i].password=nv;
+  save();
+}
+
+function addService(){
+  const date=document.getElementById('f-date').value;
+  const cl=document.getElementById('f-cl').value.trim();
+  const ad=document.getElementById('f-ad').value.trim();
+  const tp=document.getElementById('f-tp').value;
+  const dr=document.getElementById('f-dr').value;
+  const inV=document.getElementById('cab-in').value.trim();
+  if(inV&&!pendingChips.includes(inV))pendingChips.push(inV);
+  document.getElementById('cab-in').value='';
+  if(!date||!ad||!tp||!dr){alert('Preencha: Data, Endereço, Tipo e Motorista.');return;}
+  ST.services.push({id:Date.now().toString(),client:cl,address:ad,type:tp,cacambas:[...pendingChips],driver:dr,done:false,serviceDate:date});
+  save();pendingChips=[];renderChips();
+  ['f-cl','f-ad'].forEach(id=>document.getElementById(id).value='');
+  ['f-tp','f-dr'].forEach(id=>document.getElementById(id).value='');
+  const btn=document.getElementById('sub-btn');btn.textContent='✓ Cadastrado!';btn.style.background='var(--gr)';
+  setTimeout(()=>{btn.textContent='Cadastrar Serviço';btn.style.background='';},1600);
+}
+
+function delSvc(id){if(!confirm('Remover serviço?'))return;ST.services=ST.services.filter(s=>s.id!==id);save();renderAdminList();}
+function addDriver(){
+  const nIn=document.getElementById('nd-inp');
+  const pIn=document.getElementById('nd-pw-inp');
+  const n=(nIn.value||'').trim();
+  const pw=(pIn.value||'').trim();
+  if(!n){alert('Digite o nome do motorista.');return;}
+  if(!pw||pw.length<3){alert('A senha deve ter no mínimo 3 caracteres.');return;}
+  if(ST.drivers.some(x=>x.name===n)){alert('Já existe um motorista com esse nome.');return;}
+  ST.drivers.push({name:n,password:pw});save();
+  nIn.value='';pIn.value='';
+  renderDrvAdmin();renderAdminDriverSelect();renderLogin();
+}
+function rmDrv(i){if(!confirm('Remover '+ST.drivers[i].name+'?'))return;ST.drivers.splice(i,1);save();renderDrvAdmin();renderAdminDriverSelect();renderLogin();}
+
+// ── CHANGE PASSWORD ──
+function changePw(){
+  const cur=document.getElementById('pw-cur').value;
+  const nw=document.getElementById('pw-new').value;
+  const nw2=document.getElementById('pw-new2').value;
+  const msg=document.getElementById('pw-msg');
+  if(cur!==ST.adminPw){msg.style.color='var(--re)';msg.textContent='Senha atual incorreta.';return;}
+  if(!nw||nw.length<3){msg.style.color='var(--re)';msg.textContent='Nova senha muito curta (mínimo 3 caracteres).';return;}
+  if(nw!==nw2){msg.style.color='var(--re)';msg.textContent='As senhas não conferem.';return;}
+  ST.adminPw=nw;save();
+  ['pw-cur','pw-new','pw-new2'].forEach(id=>document.getElementById(id).value='');
+  msg.style.color='var(--gr)';msg.textContent='✓ Senha alterada com sucesso!';
+  setTimeout(()=>msg.textContent='',3000);
+}
+
+// ── REPORTS ──
+document.getElementById('rpt-period').addEventListener('change',function(){document.getElementById('custom-dates').style.display=this.value==='custom'?'flex':'none';});
+function renderRptFilters(){
+  renderAdminDriverSelect();
+  document.getElementById('rpt-from').value=TODAY;document.getElementById('rpt-to').value=TODAY;
+}
+function getFilteredSvcs(){
+  const drvF=document.getElementById('rpt-driver').value;
+  const p=document.getElementById('rpt-period').value;
+  const now=new Date();let from,to;
+  if(p==='today'){from=to=TODAY;}else if(p==='week'){const d=new Date(now);d.setDate(d.getDate()-d.getDay());from=d.toISOString().split('T')[0];to=TODAY;}
+  else if(p==='month'){from=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';to=TODAY;}
+  else{from=document.getElementById('rpt-from').value;to=document.getElementById('rpt-to').value;}
+  return ST.services.filter(s=>{const d=s.serviceDate||TODAY;return d>=from&&d<=to&&(!drvF||s.driver===drvF);});
+}
+function periodLabel(){const p=document.getElementById('rpt-period').value,now=new Date();if(p==='today')return now.toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'});if(p==='week')return'Esta semana';if(p==='month')return now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});return document.getElementById('rpt-from').value+' → '+document.getElementById('rpt-to').value;}
+function genReport(){
+  const svcs=getFilteredSvcs(),drv=document.getElementById('rpt-driver').value;
+  const total=svcs.length,ent=svcs.filter(s=>s.type==='entrega').length,ret=svcs.filter(s=>s.type==='retirada').length;
+  const tro=svcs.filter(s=>s.type==='troca').length,done=svcs.filter(s=>s.done).length,pend=total-done;
+  const pct=total>0?Math.round(done/total*100):0;
+  const totalC=svcs.reduce((a,s)=>a+(s.cacambas||[]).length,0);
+  let html=`<div class="rpt-section"><div class="rpt-sech">📊 ${periodLabel()}${drv?' · '+drv:''}</div><div style="padding:11px 13px"><div class="stats-grid"><div class="stat-card"><div class="stat-label">Serviços</div><div class="stat-val">${total}</div></div><div class="stat-card"><div class="stat-label">Caçambas</div><div class="stat-val">${totalC}</div></div><div class="stat-card"><div class="stat-label">Concluídos</div><div class="stat-val ok">${done}</div></div><div class="stat-card"><div class="stat-label">Pendentes</div><div class="stat-val pend">${pend}</div></div></div><div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap"><span style="background:var(--bll);color:var(--bld);border-radius:20px;padding:3px 9px;font-size:11px;font-weight:600">📦 ${ent}</span><span style="background:var(--grl);color:var(--grd);border-radius:20px;padding:3px 9px;font-size:11px;font-weight:600">♻️ ${ret}</span><span style="background:var(--aml);color:var(--amd);border-radius:20px;padding:3px 9px;font-size:11px;font-weight:600">🔄 ${tro}</span></div><div style="margin-top:9px"><div style="font-size:11px;color:var(--mu);margin-bottom:4px">Conclusão: ${pct}%</div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div></div></div>`;
+  if(!drv&&ST.drivers.length>1){html+=`<div class="rpt-section"><div class="rpt-sech">👷 Por Motorista</div>`;ST.drivers.forEach(drv2=>{const ds=svcs.filter(s=>s.driver===drv2.name);if(!ds.length)return;const dd=ds.filter(s=>s.done).length,dp=Math.round(dd/ds.length*100),dc=ds.reduce((a,s)=>a+(s.cacambas||[]).length,0);html+=`<div class="bdc-row"><div style="flex:1"><div style="font-size:13px;font-weight:600">${drv2.name}</div><div style="font-size:11px;color:var(--mu)">${ds.length} serviço${ds.length!==1?'s':''} · ${dc} caçamba${dc!==1?'s':''} · ${dd} feito${dd!==1?'s':''}</div><div class="progress-bar"><div class="progress-fill" style="width:${dp}%"></div></div></div><span class="rpt-st done" style="margin-left:8px">${dp}%</span></div>`;});html+=`</div>`;}
+  if(svcs.length){html+=`<div class="rpt-section"><div class="rpt-sech">📋 Lista Detalhada</div>`;[...svcs.filter(s=>!s.done),...svcs.filter(s=>s.done)].forEach(s=>{const lbl={entrega:'📦 Entrega',retirada:'♻️ Retirada',troca:'🔄 Troca'}[s.type];const cabs=s.cacambas||[s.num||'?'];const cabHtml=cabs.map(c=>`<span class="cab-tag" style="font-size:10px;padding:1px 5px">${c}</span>`).join('');html+=`<div class="rpt-row"><span class="asib ${s.type}">${lbl}</span><div class="rpt-row-info"><div class="rpt-addr">${s.address}</div><div class="rpt-meta">${s.serviceDate} · ${s.driver}${s.client?' · '+s.client:''}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${cabHtml}</div></div><span class="rpt-st ${s.done?'done':'pend'}">${s.done?'Concluído':'Pendente'}</span></div>`;});html+=`</div>`;}
+  else{html+=`<div class="no-data">Nenhum serviço no período.</div>`;}
+  document.getElementById('rpt-out').innerHTML=html;
+  document.getElementById('exp-row').style.display=svcs.length?'flex':'none';
+  window._rptSvcs=svcs;window._rptLabel=periodLabel();window._rptDrv=drv;
+}
+function exportPDF(){
+  const svcs=window._rptSvcs||[],lbl=window._rptLabel||'',drv=window._rptDrv||'';
+  const done=svcs.filter(s=>s.done).length,pct=svcs.length?Math.round(done/svcs.length*100):0;
+  const ent=svcs.filter(s=>s.type==='entrega').length,ret=svcs.filter(s=>s.type==='retirada').length,tro=svcs.filter(s=>s.type==='troca').length;
+  const totalC=svcs.reduce((a,s)=>a+(s.cacambas||[]).length,0);
+  const rows=svcs.map(s=>{const t={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[s.type];const cabs=(s.cacambas||[s.num||'?']).join(', ');return`<tr style="border-bottom:1px solid #e5e3dc"><td style="padding:6px 8px;font-size:12px">${s.serviceDate}</td><td style="padding:6px 8px;font-size:12px">${s.address}</td><td style="padding:6px 8px;font-size:12px">${t}</td><td style="padding:6px 8px;font-size:12px">${cabs}</td><td style="padding:6px 8px;font-size:12px">${s.driver}</td><td style="padding:6px 8px;font-size:12px;font-weight:600;color:${s.done?'#1B5E20':'#A32D2D'}">${s.done?'Concluído':'Pendente'}</td></tr>`;}).join('');
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#1a1917}h1{color:#2E7D32;font-size:18px;margin-bottom:3px}.sub{color:#6b6963;font-size:12px;margin-bottom:20px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}.sc{border:1px solid #e2e0d8;border-radius:7px;padding:10px}.sl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}.sv{font-size:20px;font-weight:700}table{width:100%;border-collapse:collapse}th{background:#F8F7F4;padding:7px 8px;font-size:10px;text-align:left;border-bottom:2px solid #e2e0d8;color:#6b6963;text-transform:uppercase}@media print{body{padding:14px}}</style></head><body><h1>Jampa Caçambas — Relatório</h1><div class="sub">${lbl}${drv?' · '+drv:''} · Gerado em ${new Date().toLocaleString('pt-BR')}</div><div class="sg"><div class="sc"><div class="sl">Serviços</div><div class="sv">${svcs.length}</div></div><div class="sc"><div class="sl">Caçambas</div><div class="sv">${totalC}</div></div><div class="sc"><div class="sl">Concluídos</div><div class="sv" style="color:#1B5E20">${done}</div></div><div class="sc"><div class="sl">Taxa</div><div class="sv">${pct}%</div></div></div><p style="font-size:11px;color:#6b6963;margin-bottom:14px">📦 ${ent} Entregas &nbsp;♻️ ${ret} Retiradas &nbsp;🔄 ${tro} Trocas</p><table><thead><tr><th>Data</th><th>Endereço</th><th>Tipo</th><th>Caçambas</th><th>Motorista</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=function(){window.print();}<\/script></body></html>`);
+  w.document.close();
+}
+function exportCSV(){
+  const svcs=window._rptSvcs||[],lbl=(window._rptLabel||'relatorio').replace(/[^a-zA-Z0-9]/g,'_');
+  const rows=[['Data','Endereço','Tipo','Caçambas','Qtd','Motorista','Cliente','Status']];
+  svcs.forEach(s=>{const t={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[s.type];const cabs=s.cacambas||[s.num||'?'];rows.push([s.serviceDate,s.address,t,cabs.join('; '),cabs.length,s.driver,s.client||'',s.done?'Concluído':'Pendente']);});
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`relatorio_${lbl}.csv`;a.click();
+}
+
+renderLogin();
+</script>
