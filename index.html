@@ -254,8 +254,9 @@ input[type=date].dp:focus{border-color:var(--or)}
     <button class="tab active" onclick="stab('t-add',0)">+ Novo</button>
     <button class="tab" onclick="stab('t-list',1)">📋 Serviços</button>
     <button class="tab" onclick="stab('t-drv',2)">👷 Equipe</button>
-    <button class="tab" onclick="stab('t-rpt',3)">📊 Relatório</button>
-    <button class="tab" onclick="stab('t-cfg',4)">⚙️ Config</button>
+    <button class="tab" onclick="stab('t-cab',3)">🟫 Caçambas</button>
+    <button class="tab" onclick="stab('t-rpt',4)">📊 Relatório</button>
+    <button class="tab" onclick="stab('t-cfg',5)">⚙️ Config</button>
   </div>
   <div class="body" style="padding-top:11px">
 
@@ -303,6 +304,46 @@ input[type=date].dp:focus{border-color:var(--or)}
           <input class="nd-inp" id="nd-pw-inp" type="password" placeholder="Senha (mín. 3 caracteres)" autocomplete="new-password" onkeydown="if(event.key==='Enter')addDriver()" style="flex:1 1 100%">
           <button class="add-btn" onclick="addDriver()" style="flex:1 1 100%">+ Adicionar Motorista</button>
         </div>
+      </div>
+    </div>
+
+    <!-- CAÇAMBAS -->
+    <div id="t-cab" class="tc">
+      <div class="card">
+        <div class="ctit">Cadastrar Caçambas</div>
+        <div class="fg">
+          <label>Cadastro individual</label>
+          <div style="display:flex;gap:6px">
+            <input class="cnin" id="cab-reg-num" type="text" placeholder="Nº da caçamba (ex: 42)" onkeydown="if(event.key==='Enter'){event.preventDefault();registerSingleCab()}" style="flex:1">
+            <button class="cab-add-btn" onclick="registerSingleCab()">+ Cadastrar</button>
+          </div>
+          <div id="cab-reg-msg" style="font-size:11px;min-height:14px;margin-top:4px"></div>
+        </div>
+        <div class="fg" style="border-bottom:none">
+          <label>Cadastro em lote</label>
+          <div style="display:flex;gap:6px">
+            <input class="cnin" id="cab-batch-from" type="number" min="1" placeholder="Início (ex: 1)">
+            <input class="cnin" id="cab-batch-to" type="number" min="1" placeholder="Fim (ex: 200)">
+          </div>
+          <button class="sub-btn" style="margin:8px 0 0 0;width:100%" onclick="registerBatchCabs()">Gerar lote</button>
+          <div id="cab-batch-msg" style="font-size:11px;min-height:14px;margin-top:4px"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ctit" style="display:flex;align-items:center;gap:8px">
+          <span style="flex:1">Caçambas cadastradas</span>
+          <span id="cab-count-info" style="font-weight:400;color:var(--mu);font-size:11px"></span>
+        </div>
+        <div style="display:flex;gap:7px;padding:10px 13px;border-bottom:.5px solid var(--br)">
+          <input class="cnin" type="text" id="cab-search" placeholder="🔍 Buscar número" oninput="renderCabList()" style="flex:1">
+          <select class="cnin" id="cab-filter-status" onchange="renderCabList()" style="flex:1">
+            <option value="">Todos</option>
+            <option value="Disponível">Disponível</option>
+            <option value="Em uso">Em uso</option>
+          </select>
+        </div>
+        <div id="cab-list"></div>
       </div>
     </div>
 
@@ -366,6 +407,7 @@ function save(){localStorage.setItem('cacamba_v4',JSON.stringify(ST))}
 if(Array.isArray(ST.drivers)){
   ST.drivers = ST.drivers.map(d => typeof d === 'string' ? {name:d, password:'1234'} : {name:d.name, password:(d.password&&d.password.length>=3)?d.password:'1234'});
 }
+if(!Array.isArray(ST.cacambas)) ST.cacambas = [];
 save();
 
 let currentDriverName = '';
@@ -466,6 +508,7 @@ function stab(id,idx){
   document.querySelectorAll('.tab')[idx].classList.add('active');
   if(id==='t-list')renderAdminList();
   if(id==='t-drv')renderDrvAdmin();
+  if(id==='t-cab')renderCabList();
   if(id==='t-rpt'){renderRptFilters();document.getElementById('rpt-out').innerHTML='';document.getElementById('exp-row').style.display='none';}
 }
 
@@ -723,6 +766,148 @@ function exportCSV(){
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`relatorio_${lbl}.csv`;a.click();
+}
+
+// ── CAÇAMBAS ──
+function normalizeCabNum(v){return String(v==null?'':v).trim();}
+function validateCabNum(v){
+  const n=normalizeCabNum(v);
+  if(!n)return{ok:false,msg:'Informe um número válido.'};
+  if(n.length>20)return{ok:false,msg:'Número muito longo (máx. 20 caracteres).'};
+  if(!/^[0-9A-Za-z-]+$/.test(n))return{ok:false,msg:'Use apenas letras, números e hífen.'};
+  return{ok:true,num:n};
+}
+function getCabStatus(num){
+  const related=ST.services.filter(s=>(s.cacambas||[]).includes(num));
+  const closed=related.filter(s=>s.done);
+  closed.sort((a,b)=>{
+    const da=(a.serviceDate||'')+'-'+(a.id||'');
+    const db=(b.serviceDate||'')+'-'+(b.id||'');
+    return db.localeCompare(da);
+  });
+  if(!closed.length)return{status:'Disponível',address:null,service:null};
+  const latest=closed[0];
+  if(latest.type==='entrega'||latest.type==='troca')return{status:'Em uso',address:latest.address,service:latest};
+  return{status:'Disponível',address:null,service:null};
+}
+function getCabHistory(num){
+  return ST.services.filter(s=>(s.cacambas||[]).includes(num)).slice().sort((a,b)=>{
+    const da=(a.serviceDate||'')+'-'+(a.id||'');
+    const db=(b.serviceDate||'')+'-'+(b.id||'');
+    return db.localeCompare(da);
+  });
+}
+function _setCabMsg(id,txt,ok){
+  const el=document.getElementById(id);if(!el)return;
+  el.textContent=txt||'';
+  el.style.color=ok?'var(--gr)':'var(--re)';
+  if(txt)setTimeout(()=>{if(el.textContent===txt)el.textContent='';},3500);
+}
+function registerSingleCab(){
+  const inp=document.getElementById('cab-reg-num');
+  const res=validateCabNum(inp.value);
+  if(!res.ok){_setCabMsg('cab-reg-msg',res.msg,false);return;}
+  if(ST.cacambas.some(c=>c.num===res.num)){_setCabMsg('cab-reg-msg','Caçamba nº '+res.num+' já está cadastrada.',false);return;}
+  ST.cacambas.push({num:res.num,createdAt:new Date().toISOString()});
+  save();
+  inp.value='';inp.focus();
+  _setCabMsg('cab-reg-msg','✓ Caçamba nº '+res.num+' cadastrada.',true);
+  renderCabList();
+}
+function registerBatchCabs(){
+  const fromEl=document.getElementById('cab-batch-from');
+  const toEl=document.getElementById('cab-batch-to');
+  const fromV=parseInt(fromEl.value,10);
+  const toV=parseInt(toEl.value,10);
+  if(!Number.isInteger(fromV)||!Number.isInteger(toV)||fromV<1||toV<1){
+    _setCabMsg('cab-batch-msg','Informe início e fim como números inteiros maiores que zero.',false);return;
+  }
+  if(toV<fromV){_setCabMsg('cab-batch-msg','O fim deve ser maior ou igual ao início.',false);return;}
+  if(toV-fromV+1>2000){_setCabMsg('cab-batch-msg','Lote muito grande. Máximo de 2000 por vez.',false);return;}
+  const existing=new Set(ST.cacambas.map(c=>c.num));
+  let added=0,skipped=0;
+  const now=new Date().toISOString();
+  for(let n=fromV;n<=toV;n++){
+    const num=String(n);
+    if(existing.has(num)){skipped++;continue;}
+    ST.cacambas.push({num,createdAt:now});
+    existing.add(num);
+    added++;
+  }
+  save();
+  fromEl.value='';toEl.value='';
+  const parts=['✓ '+added+' cadastrada'+(added!==1?'s':'')];
+  if(skipped)parts.push(skipped+' já existente'+(skipped!==1?'s (ignoradas)':' (ignorada)'));
+  _setCabMsg('cab-batch-msg',parts.join(' · '),true);
+  renderCabList();
+}
+function removeCab(num){
+  const s=getCabStatus(num);
+  let warn='Remover cadastro da caçamba nº '+num+'?';
+  if(s.status==='Em uso')warn+='\n\n⚠️ Esta caçamba está EM USO em: '+(s.address||'endereço desconhecido');
+  if(!confirm(warn))return;
+  ST.cacambas=ST.cacambas.filter(c=>c.num!==num);
+  save();renderCabList();
+}
+function toggleCabHistory(num){
+  const safe=num.replace(/[^a-zA-Z0-9_-]/g,'_');
+  const el=document.getElementById('cab-hist-'+safe);
+  if(!el)return;
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+function _escHtml(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function renderCabList(){
+  const list=document.getElementById('cab-list');if(!list)return;
+  const q=(document.getElementById('cab-search').value||'').trim().toLowerCase();
+  const stF=document.getElementById('cab-filter-status').value;
+  const total=ST.cacambas.length;
+  const emUso=ST.cacambas.filter(c=>getCabStatus(c.num).status==='Em uso').length;
+  const disp=total-emUso;
+  document.getElementById('cab-count-info').textContent=total?`${total} total · ${disp} disp · ${emUso} em uso`:'';
+  const sorted=[...ST.cacambas].sort((a,b)=>{
+    const na=parseInt(a.num,10),nb=parseInt(b.num,10);
+    if(!isNaN(na)&&!isNaN(nb)&&String(na)===a.num&&String(nb)===b.num)return na-nb;
+    return a.num.localeCompare(b.num,undefined,{numeric:true});
+  });
+  const rows=sorted.filter(c=>{
+    if(q&&!c.num.toLowerCase().includes(q))return false;
+    if(stF&&getCabStatus(c.num).status!==stF)return false;
+    return true;
+  });
+  if(!total){list.innerHTML='<div class="no-data" style="border:none">Nenhuma caçamba cadastrada ainda. Use o formulário acima para começar.</div>';return;}
+  if(!rows.length){list.innerHTML='<div class="no-data" style="border:none">Nenhuma caçamba corresponde aos filtros.</div>';return;}
+  list.innerHTML='';
+  rows.forEach(c=>{
+    const s=getCabStatus(c.num);
+    const hist=getCabHistory(c.num);
+    const safeId=c.num.replace(/[^a-zA-Z0-9_-]/g,'_');
+    const numAttr=_escHtml(c.num);
+    const stClass=s.status==='Em uso'?'p':'d';
+    const addrLine=s.address?('📍 '+_escHtml(s.address)):'<span style="color:var(--mu)">— sem alocação</span>';
+    const histHtml=hist.map(h=>{
+      const lbl={entrega:'📦 Entrega',retirada:'♻️ Retirada',troca:'🔄 Troca'}[h.type]||h.type;
+      const st=h.done?'<span style="color:var(--grd);font-weight:700">✓ concluído</span>':'<span style="color:var(--re);font-weight:700">⏳ pendente</span>';
+      return `<div style="font-size:11px;padding:4px 0;border-bottom:.5px dashed var(--br)"><strong>${_escHtml(h.serviceDate||'')}</strong> · ${lbl} · ${_escHtml(h.address||'')} · ${_escHtml(h.driver||'')} · ${st}</div>`;
+    }).join('')||'<div style="font-size:11px;color:var(--mu);padding:4px 0">Sem utilizações registradas.</div>';
+    const row=document.createElement('div');
+    row.className='asi';
+    row.style.flexWrap='wrap';
+    row.innerHTML=`
+      <div class="asi-inf" style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:700">🟫 ${_escHtml(c.num)}</span>
+          <span class="as-st ${stClass}">${s.status}</span>
+        </div>
+        <div class="asi-meta" style="margin-top:4px">${addrLine}</div>
+        <button class="exp-btn" style="margin-top:6px;padding:5px 10px;font-size:11px" onclick="toggleCabHistory('${numAttr}')">📜 Histórico (${hist.length})</button>
+        <div id="cab-hist-${safeId}" style="display:none;margin-top:6px;border-left:2px solid var(--br);padding:2px 0 2px 8px">
+          ${histHtml}
+        </div>
+      </div>
+      <button class="del-btn" onclick="removeCab('${numAttr}')">🗑</button>
+    `;
+    list.appendChild(row);
+  });
 }
 
 renderLogin();
