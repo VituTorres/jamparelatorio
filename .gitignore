@@ -1,0 +1,24 @@
+# Arquivos do Sistema Operacional (Mac e Windows)
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Configurações do Editor de Código (VS Code)
+.vscode/
+*.code-workspace
+
+# Arquivos Compactados (Impede que backups antigos subam para o GitHub)
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Arquivos de Log e Debug
+*.log
+npm-debug.log*
+yarn-error.log*
+yarn-debug.log*
+
+# (Opcional) Se no futuro você adicionar Node.js, já deixa a pasta ignorada
+node_modules/
