@@ -172,3 +172,15 @@ input[type=date].dp:focus{border-color:var(--or)}
 .login-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px 20px 30px;background:linear-gradient(180deg,#fff 0%,var(--grl) 100%);border-bottom:1px solid var(--br)}
 .login-hero h1{font-size:24px;font-weight:800;color:var(--grd);letter-spacing:-.5px;text-align:center}
 .login-hero p{font-size:12px;color:var(--mu);margin-top:6px;text-align:center}
+
+/* ── SLOTS DE CAÇAMBA (tela do motorista) ── */
+.cab-slot{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:.5px dashed var(--br)}
+.cab-slot:last-of-type{border-bottom:none}
+.cab-slot-label{font-size:11px;font-weight:700;color:var(--mu);min-width:72px;flex-shrink:0}
+.cab-slot-input{display:flex;gap:5px;flex:1}
+.cab-slot-input .cnin{flex:1;font-size:13px;padding:7px 10px}
+.cab-slot-input .cab-add-btn{padding:7px 12px;font-size:13px}
+.slot-err{display:none;font-size:11px;color:var(--re);font-weight:600;background:var(--rel);border-radius:6px;padding:4px 8px;margin-top:3px;width:100%}
+
+/* Badge de slots pendentes na lista admin */
+.cab-pending-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;color:var(--amd);background:var(--aml);border-radius:20px;padding:1px 7px}
