@@ -174,8 +174,14 @@ export function genReport(){
   const svcs=getFilteredSvcs(), drv=document.getElementById('rpt-driver').value;
   const total=svcs.length, ent=svcs.filter(s=>s.type==='entrega').length, ret=svcs.filter(s=>s.type==='retirada').length;
   const tro=svcs.filter(s=>s.type==='troca').length, done=svcs.filter(s=>s.done).length, pend=total-done;
-  const totalC=svcs.reduce((a,s)=>a+(s.cacambas||[]).length,0);
-  let html=`<div class="rpt-section"><div class="rpt-sech">📊 Relatório</div><div style="padding:11px 13px"><div class="stats-grid"><div class="stat-card"><div class="stat-label">Serviços</div><div class="stat-val">${total}</div></div><div class="stat-card"><div class="stat-label">Caçambas</div><div class="stat-val">${totalC}</div></div><div class="stat-card"><div class="stat-label">Feitos</div><div class="stat-val ok">${done}</div></div><div class="stat-card"><div class="stat-label">Pendentes</div><div class="stat-val pend">${pend}</div></div></div></div></div>`;
+  // Contar apenas caçambas de colocações (Entrega e Troca)
+  const totalC = svcs.reduce((a, s) => {
+    if (s.type === 'entrega' || s.type === 'troca') {
+      return a + (s.cacambas || []).length;
+    }
+    return a;
+  }, 0);
+  let html=`<div class="rpt-section"><div class="rpt-sech">📊 Relatório</div><div style="padding:11px 13px"><div class="stats-grid"><div class="stat-card"><div class="stat-label">Serviços</div><div class="stat-val">${total}</div></div><div class="stat-card"><div class="stat-label">Caçambas (Coloc.)</div><div class="stat-val">${totalC}</div></div><div class="stat-card"><div class="stat-label">Feitos</div><div class="stat-val ok">${done}</div></div><div class="stat-card"><div class="stat-label">Pendentes</div><div class="stat-val pend">${pend}</div></div></div></div></div>`;
   document.getElementById('rpt-out').innerHTML=html;
   document.getElementById('exp-row').style.display=svcs.length?'flex':'none';
   window._rptSvcs=svcs;
@@ -199,7 +205,13 @@ export function exportPDF(){
   const tro   = svcs.filter(s=>s.type==='troca').length;
   const done  = svcs.filter(s=>s.done).length;
   const pend  = total - done;
-  const totalC= svcs.reduce((a,s)=>a+(s.cacambas||[]).length, 0);
+  // Contar apenas caçambas de colocações (Entrega e Troca)
+  const totalC = svcs.reduce((a, s) => {
+    if (s.type === 'entrega' || s.type === 'troca') {
+      return a + (s.cacambas || []).length;
+    }
+    return a;
+  }, 0);
 
   const typeLabel = { entrega:'📦 Entrega', retirada:'♻️ Retirada', troca:'🔄 Troca' };
 
@@ -388,7 +400,7 @@ export function renderCabList(){
     row.innerHTML=`
       <div style="flex:1">
         <div style="display:flex;align-items:center;gap:8px">
-          🟫 <strong>${c.num}</strong>
+          <img src="assets/images/cacamba.png" style="width:18px;height:auto;vertical-align:middle;margin-right:4px"> <strong>${c.num}</strong>
           <span class="admin-list-item__status ${isUso?'p':'d'}" style="font-size:9px;padding:1px 5px">
             ${status}
           </span>

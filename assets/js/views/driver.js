@@ -49,10 +49,10 @@ export function renderDriver(){
       let cabSection;
       
       if(sv.done){
-        const cabHtml=cabs.length?cabs.map(c=>`<span class="cab-tag">🟫 ${c}</span>`).join(''):'<span style="font-size:11px;color:var(--mu)">sem caçamba</span>';
+        const cabHtml=cabs.length?cabs.map(c=>`<span class="cab-tag"><img src="assets/images/cacamba.png" style="width:14px;height:auto;margin-right:4px"> ${c}</span>`).join(''):'<span style="font-size:11px;color:var(--mu)">sem caçamba</span>';
         cabSection=`<div class="cab-row">${cabHtml}</div>`;
       } else {
-        const chipsHtml=cabs.map((c,i)=>`<span class="cab-chip">🟫 ${c} <button type="button" data-action="remove-cab-svc" data-id="${sv.id}" data-idx="${i}">×</button></span>`).join('');
+        const chipsHtml=cabs.map((c,i)=>`<span class="cab-chip"><img src="assets/images/cacamba.png" style="width:16px;height:auto;margin-right:4px"> ${c} <button type="button" data-action="remove-cab-svc" data-id="${sv.id}" data-idx="${i}">×</button></span>`).join('');
         
         let inputRow = '';
         let emptyNote = '';
@@ -195,7 +195,7 @@ export async function toggle(id){
       s.cacambas.forEach(num => {
         const cab = ST.cacambas.find(c => c.num === num);
         if (cab) {
-          delete cab.status;
+          cab.status = 'Disponível'; // Explicitamente marcar como disponível
           delete cab.servicoId;
           delete cab.endereco;
           delete cab.retiradaServiceId;
