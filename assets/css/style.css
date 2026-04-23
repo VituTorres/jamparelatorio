@@ -1,7 +1,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --or:#2E7D32;--orl:#E8F5E9;--ord:#1B5E20;
-  --gr:#2E7D32;--grl:#E8F5E9;--grd:#1B5E20;
+  --gr:#00C853;--grl:#E8F5E9;--grd:#1B5E20;
   --bl:#185FA5;--bll:#E6F1FB;--bld:#0C447C;
   --am:#854F0B;--aml:#FAEEDA;--amd:#412402;
   --re:#A32D2D;--rel:#FCEBEB;--red:#501313;
@@ -77,7 +77,8 @@ input[type=date].date-input:focus{border-color:var(--or)}
 .cab-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
 .cab-tag{display:inline-flex;align-items:center;background:var(--sf);border:1px solid var(--br);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;color:var(--gyd)}
 .task-card__action{width:46px;height:46px;border-radius:50%;border:none;background:var(--gr);color:#fff;font-size:19px;cursor:pointer;flex-shrink:0;margin-top:2px;transition:transform .1s}
-.task-card__action:active{transform:scale(.88)}.task-card__action.done{background:var(--gyl);color:var(--gy)}
+.task-card__action:active{transform:scale(.88)}.task-card__action.completed{background:var(--gr);color:#fff}
+.task-card__action.pending{background:var(--gyl);color:var(--gy)}
 .task-card__action.disabled{background:var(--gyl);color:var(--gy);cursor:not-allowed}
 .svc-cab-box{margin-top:7px;border:1px dashed var(--br);border-radius:9px;padding:7px 8px;background:var(--sf)}
 .svc-cab-box .cab-chips{margin-bottom:6px}

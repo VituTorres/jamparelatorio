@@ -1,7 +1,7 @@
 import { initApp } from './state.js'; 
 import { renderLogin, openPwModal, closePwModal, checkPw, logout } from './views/login.js';
 import { changeDay, setDay, addCabToSvc, removeCabFromSvc, toggle } from './views/driver.js';
-import { addService, delSvc, addDriver, rmDrv, changePw, genReport, registerSingleCab, registerBatchCabs, removeCab, renderCabList, stab, updateDriverName, updateDriverPassword } from './views/admin.js';
+import { addService, delSvc, addDriver, rmDrv, changePw, genReport, exportPDF, registerSingleCab, registerBatchCabs, removeCab, renderCabList, stab, updateDriverName, updateDriverPassword } from './views/admin.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const loader = document.createElement('div');
@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-reg-single-cab').onclick = registerSingleCab;
   document.getElementById('btn-reg-batch-cab').onclick = registerBatchCabs;
   document.getElementById('btn-gen-report').onclick = genReport;
+  document.getElementById('btn-exp-pdf').onclick = exportPDF;
   document.getElementById('btn-change-pw').onclick = changePw;
 
   document.querySelectorAll('.btn-logout').forEach(b => b.onclick = logout);

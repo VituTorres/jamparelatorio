@@ -69,7 +69,7 @@ export function renderDriver(){
       }
       
       const canComplete = sv.done || (expected === 0 ? true : cabs.length >= expected);
-      const btnClass = sv.done ? 'task-card__action done' : (canComplete ? 'task-card__action' : 'task-card__action disabled');
+      const btnClass = sv.done ? 'task-card__action completed' : (canComplete ? 'task-card__action pending' : 'task-card__action disabled');
       const typeLabel={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[sv.type];
       const cabCount = expected > 0 ? ` · ${cabs.length}/${expected} caçambas` : (cabs.length ? ` · ${cabs.length} caçamba(s)` : ` · 0 caçambas`);
       
@@ -81,7 +81,7 @@ export function renderDriver(){
   if(!svcs.length)body.innerHTML='<div class="no-data">Nenhum serviço para este dia.<br><span style="font-size:12px">Use ‹ › para navegar entre os dias.</span></div>';
 }
 
-export function addCabToSvc(id){
+export async function addCabToSvc(id){
   const inp=document.getElementById('svc-in-'+id);if(!inp)return;
   const v=inp.value.trim();if(!v)return;
   const sv=ST.services.find(x=>x.id===id);if(!sv)return;
@@ -95,24 +95,89 @@ export function addCabToSvc(id){
   
   if(sv.cacambas.includes(v)){alert('Caçamba '+v+' já adicionada.');return;}
 
-  const existeNoSistema = ST.cacambas.some(c => c.num === v);
-  if (!existeNoSistema) {
+  const cabSistema = ST.cacambas.find(c => c.num === v);
+  if (!cabSistema) {
     alert('❌ Erro: A caçamba nº ' + v + ' não existe no sistema. Contate o Administrador.');
     return;
   }
 
+  // Validação: Se a caçamba já está em uso, só pode ser adicionada a um serviço de RETIRADA
+  if (cabSistema.status === 'Em uso') {
+    if (sv.type !== 'retirada') {
+      alert(`❌ Erro: A caçamba nº ${v} já está em uso no endereço: ${cabSistema.endereco || 'não informado'}.\n\nSó é possível adicionar caçambas em uso em serviços de RETIRADA.`);
+      return;
+    }
+  }
+
+  const btn = document.querySelector(`button[data-action="add-cab-svc"][data-id="${id}"]`);
+  if(btn) {
+    btn.disabled = true;
+    btn.textContent = "...";
+  }
+
   sv.cacambas.push(v);
-  save();renderDriver();
+  
+  // LÓGICA DE STATUS:
+  // - Se for ENTREGA: marca como "Em uso"
+  // - Se for RETIRADA: apenas vincula (a caçamba já está em uso desde a entrega)
+  // - Se for TROCA: marca como "Em uso" (é uma entrega + retirada)
+  
+  if (sv.type === 'entrega') {
+    cabSistema.status = 'Em uso';
+    cabSistema.servicoId = sv.id;
+    cabSistema.endereco = sv.address;
+  } else if (sv.type === 'retirada') {
+    // Apenas vincula; a caçamba já está em uso desde a entrega
+    cabSistema.retiradaServiceId = sv.id;
+  } else if (sv.type === 'troca') {
+    // Troca é entrega + retirada, então marca como em uso
+    cabSistema.status = 'Em uso';
+    cabSistema.servicoId = sv.id;
+    cabSistema.endereco = sv.address;
+  }
+
+  try {
+    await save();
+    renderDriver();
+  } catch (err) {
+    alert("Erro ao salvar no Firebase.");
+    if(btn) {
+      btn.disabled = false;
+      btn.textContent = "+ Caçamba";
+    }
+  }
 }
 
-export function removeCabFromSvc(id,idx){
+export async function removeCabFromSvc(id,idx){
   const sv=ST.services.find(x=>x.id===id);if(!sv||!Array.isArray(sv.cacambas))return;
+  const num = sv.cacambas[idx];
+  
+  // Se for RETIRADA ou TROCA, apenas remove o vínculo de retirada
+  // A caçamba só fica disponível quando a retirada é marcada como concluída
+  
+  const cab = ST.cacambas.find(c => c.num === num);
+  if (cab) {
+    if (sv.type === 'retirada') {
+      delete cab.retiradaServiceId;
+    } else if (sv.type === 'troca') {
+      delete cab.retiradaServiceId;
+    }
+    // Se for ENTREGA, remove o vínculo e libera a caçamba
+    else if (sv.type === 'entrega') {
+      delete cab.status;
+      delete cab.servicoId;
+      delete cab.endereco;
+    }
+  }
+
   sv.cacambas.splice(idx,1);
-  save();renderDriver();
+  await save();
+  renderDriver();
 }
 
-export function toggle(id){
+export async function toggle(id){
   const s=ST.services.find(x=>x.id===id);if(!s)return;
+  
   if(!s.done){
     const cabs=Array.isArray(s.cacambas)?s.cacambas:[];
     const expected = s.qtd || 0;
@@ -120,6 +185,57 @@ export function toggle(id){
         alert(`Adicione as ${expected} caçamba(s) antes de concluir.`);
         return;
     }
+
+    // Ao marcar como CONCLUÍDO:
+    // - Se for ENTREGA: caçambas continuam "Em uso" (aguardando retirada)
+    // - Se for RETIRADA: libera as caçambas (marca como disponível)
+    // - Se for TROCA: libera as caçambas (marca como disponível)
+    
+    if (s.type === 'retirada' || s.type === 'troca') {
+      s.cacambas.forEach(num => {
+        const cab = ST.cacambas.find(c => c.num === num);
+        if (cab) {
+          delete cab.status;
+          delete cab.servicoId;
+          delete cab.endereco;
+          delete cab.retiradaServiceId;
+        }
+      });
+    }
+    // Se for ENTREGA, não faz nada - caçambas continuam em uso
+  } else {
+    // Se estiver desmarcando como feito:
+    // - Se for RETIRADA ou TROCA: marca as caçambas como em uso novamente
+    // - Se for ENTREGA: marca como em uso (se não estava)
+    
+    if (s.type === 'retirada' || s.type === 'troca') {
+      s.cacambas.forEach(num => {
+        const cab = ST.cacambas.find(c => c.num === num);
+        if (cab) {
+          cab.status = 'Em uso';
+          // Tenta recuperar o endereço da entrega original
+          const entrega = ST.services.find(srv => 
+            srv.type === 'entrega' && srv.cacambas && srv.cacambas.includes(num)
+          );
+          if (entrega) {
+            cab.servicoId = entrega.id;
+            cab.endereco = entrega.address;
+          }
+        }
+      });
+    } else if (s.type === 'entrega') {
+      s.cacambas.forEach(num => {
+        const cab = ST.cacambas.find(c => c.num === num);
+        if (cab) {
+          cab.status = 'Em uso';
+          cab.servicoId = s.id;
+          cab.endereco = s.address;
+        }
+      });
+    }
   }
-  s.done=!s.done;save();renderDriver();
+
+  s.done=!s.done;
+  await save();
+  renderDriver();
 }
