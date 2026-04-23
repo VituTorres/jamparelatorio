@@ -42,8 +42,8 @@ export function renderDriver(){
     bl.innerHTML=`<div class="task-group__header task-group__header--${sec.c}"><span>${sec.i}</span><span class="task-group__title">${sec.l}</span><span class="task-group__count">${pn}/${items.length}</span></div>`;
     
     [...items.filter(s=>!s.done),...items.filter(s=>s.done)].forEach(sv=>{
-      const cabs=Array.isArray(sv.cacambas)?sv.cacambas:(sv.num?[sv.num]:[]);
-      const expected = sv.qtd || 0; // Quantidade pedida pelo Admin
+      const cabs=Array.isArray(sv.cacambas)?sv.cacambas:[];
+      const expected = sv.qtd || 0; 
       
       const it=document.createElement('div');it.className='task-card'+(sv.done?' done':'');
       let cabSection;
@@ -57,7 +57,6 @@ export function renderDriver(){
         let inputRow = '';
         let emptyNote = '';
         
-        // Se ainda não atingiu a quantidade ou se é livre (0)
         if (expected === 0 || cabs.length < expected) {
             const remain = expected > 0 ? expected - cabs.length : 0;
             emptyNote = remain > 0 ? `<div class="cab-empty-note">⚠️ Adicione mais ${remain} caçamba(s) para concluir</div>` : '';
@@ -69,7 +68,6 @@ export function renderDriver(){
         cabSection=`<div class="svc-cab-box"><div class="cab-chips">${chipsHtml}</div>${inputRow}${emptyNote}</div>`;
       }
       
-      // Valida se o botão de finalizar pode ser apertado
       const canComplete = sv.done || (expected === 0 ? true : cabs.length >= expected);
       const btnClass = sv.done ? 'task-card__action done' : (canComplete ? 'task-card__action' : 'task-card__action disabled');
       const typeLabel={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[sv.type];
@@ -91,16 +89,15 @@ export function addCabToSvc(id){
   
   const expected = sv.qtd || 0;
   if(expected > 0 && sv.cacambas.length >= expected){
-      alert('Quantidade máxima pedida ('+expected+') atingida para este serviço.');
+      alert('Quantidade máxima pedida ('+expected+') atingida.');
       return;
   }
   
-  if(sv.cacambas.includes(v)){alert('Caçamba '+v+' já adicionada neste serviço.');return;}
+  if(sv.cacambas.includes(v)){alert('Caçamba '+v+' já adicionada.');return;}
 
-  // TRAVA: Só aceita caçambas que existam no cadastro do Administrador
   const existeNoSistema = ST.cacambas.some(c => c.num === v);
   if (!existeNoSistema) {
-    alert('❌ Erro: A caçamba nº ' + v + ' não existe no sistema. Verifique o número digitado ou contate o Administrador.');
+    alert('❌ Erro: A caçamba nº ' + v + ' não existe no sistema. Contate o Administrador.');
     return;
   }
 
@@ -119,10 +116,8 @@ export function toggle(id){
   if(!s.done){
     const cabs=Array.isArray(s.cacambas)?s.cacambas:[];
     const expected = s.qtd || 0;
-    
-    // Bloqueia a conclusão se não tiver adicionado todas as caçambas pedidas
     if(expected > 0 && cabs.length < expected){
-        alert(`Adicione as ${expected} caçamba(s) antes de concluir o serviço.`);
+        alert(`Adicione as ${expected} caçamba(s) antes de concluir.`);
         return;
     }
   }
