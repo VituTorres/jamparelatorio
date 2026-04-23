@@ -76,9 +76,11 @@ input[type=date].date-input:focus{border-color:var(--or)}
 .task-card__type{font-size:11px;color:var(--mu);margin-top:2px;font-weight:600}
 .cab-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
 .cab-tag{display:inline-flex;align-items:center;background:var(--sf);border:1px solid var(--br);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;color:var(--gyd)}
-.task-card__action{width:46px;height:46px;border-radius:50%;border:none;background:var(--gr);color:#fff;font-size:19px;cursor:pointer;flex-shrink:0;margin-top:2px;transition:transform .1s}
-.task-card__action:active{transform:scale(.88)}.task-card__action.completed{background:var(--gr);color:#fff}
+.task-card__action{width:46px;height:46px;border-radius:50%;border:none;background:#4CAF50;color:#fff;font-size:19px;cursor:pointer;flex-shrink:0;margin-top:2px;transition:transform .1s,background .15s}
+.task-card__action:active{transform:scale(.88)}
 .task-card__action.pending{background:var(--gyl);color:var(--gy)}
+.task-card__action.pending:hover{background:var(--gyl);color:var(--gy)}
+.task-card__action.completed{background:#4CAF50;color:#fff;opacity:1}
 .task-card__action.disabled{background:var(--gyl);color:var(--gy);cursor:not-allowed}
 .svc-cab-box{margin-top:7px;border:1px dashed var(--br);border-radius:9px;padding:7px 8px;background:var(--sf)}
 .svc-cab-box .cab-chips{margin-bottom:6px}
@@ -173,3 +175,10 @@ input[type=date].date-input:focus{border-color:var(--or)}
 .login-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px 20px 30px;background:linear-gradient(180deg,#fff 0%,var(--grl) 100%);border-bottom:1px solid var(--br)}
 .login-hero h1{font-size:24px;font-weight:800;color:var(--grd);letter-spacing:-.5px;text-align:center}
 .login-hero p{font-size:12px;color:var(--mu);margin-top:6px;text-align:center}
+/* ── TOAST DE CONFIRMAÇÃO ── */
+#toast-container{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast{background:#2E7D32;color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.18);display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(16px);animation:toastIn .3s ease forwards;white-space:nowrap}
+.toast.hiding{animation:toastOut .35s ease forwards}
+.toast-icon{font-size:16px}
+@keyframes toastIn{to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(10px)}}

@@ -175,6 +175,21 @@ export async function removeCabFromSvc(id,idx){
   renderDriver();
 }
 
+function showToast(msg){
+  const container=document.getElementById('toast-container');
+  if(!container)return;
+  const icons={entrega:'📦',retirada:'♻️',troca:'🔄'};
+  const icon=Object.entries(icons).find(([k])=>msg.toLowerCase().includes(k))?.[1]||'✅';
+  const t=document.createElement('div');
+  t.className='toast';
+  t.innerHTML=`<span class="toast-icon">${icon}</span><span>${msg}</span>`;
+  container.appendChild(t);
+  setTimeout(()=>{
+    t.classList.add('hiding');
+    t.addEventListener('animationend',()=>t.remove(),{once:true});
+  },3000);
+}
+
 export async function toggle(id){
   const s=ST.services.find(x=>x.id===id);if(!s)return;
   
@@ -237,5 +252,9 @@ export async function toggle(id){
 
   s.done=!s.done;
   await save();
+  if(s.done){
+    const msgs={entrega:'Entrega efetuada com sucesso',retirada:'Retirada efetuada com sucesso',troca:'Troca efetuada com sucesso'};
+    showToast(msgs[s.type]||'Concluído com sucesso');
+  }
   renderDriver();
 }
