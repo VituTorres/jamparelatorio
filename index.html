@@ -96,13 +96,10 @@
         <div class="fg"><label>Tipo de serviço *</label>
           <select id="f-tp"><option value="">Selecione...</option><option value="entrega">📦 Entrega</option><option value="retirada">♻️ Retirada</option><option value="troca">🔄 Troca</option></select>
         </div>
-        <div class="cab-input-area">
-          <label>Caçambas <span style="font-weight:400;color:var(--mu);text-transform:none;letter-spacing:0">(opcional — o motorista poderá adicionar na tela dele)</span></label>
-          <div class="cab-chips" id="cab-chips"></div>
-          <div class="cab-add-row">
-            <input class="cnin" id="cab-in" type="text" placeholder="Nº da caçamba (ex: 101)" onkeydown="if(event.key==='Enter'){event.preventDefault();addChip()}">
-            <button class="cab-add-btn" onclick="addChip()">+ Adicionar</button>
-          </div>
+        <div class="fg">
+          <label>Quantidade de caçambas *</label>
+          <input type="number" id="f-cab-qty" min="1" max="20" placeholder="Ex: 2 — o motorista preencherá os números">
+          <div style="font-size:11px;color:var(--mu);margin-top:2px">O motorista informará o número de cada caçamba na tela dele.</div>
         </div>
         <div class="fg" style="border-bottom:none"><label>Motorista *</label><select id="f-dr"><option value="">Selecione...</option></select></div>
         <button class="sub-btn" id="sub-btn" onclick="addService()">Cadastrar Serviço</button>
