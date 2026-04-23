@@ -1,51 +1,60 @@
 import { StorageService } from './storage.js';
 import { hashPassword } from './utils.js';
 
-// LÓGICA DE DATA LOCAL (Corrigindo o erro da meia-noite/ISOString)
+// LÓGICA DE DATA LOCAL (Garante que só mude de dia à meia-noite do Brasil)
 const _d = new Date();
 export const TODAY = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}-${String(_d.getDate()).padStart(2, '0')}`;
 
-// Gera o hash da senha padrão (1234)
-const defaultPwHash = await hashPassword('1234');
-
-const defaultState = {
-  drivers: [
-    {name:'Carlos',password:defaultPwHash}, {name:'Marcos',password:defaultPwHash},
-    {name:'Rafael',password:defaultPwHash}, {name:'Leandro',password:defaultPwHash}
-  ],
-  services: [],
-  adminPw: defaultPwHash,
-  cacambas: []
-};
-
-export let ST = StorageService.getDatabase() || defaultState;
+export let ST = null; 
 
 export function save() {
-  StorageService.saveDatabase(ST);
+  if(ST) StorageService.saveDatabase(ST);
 }
 
-// Migração de Segurança: Converte senhas antigas para Hash SHA-256
-let needsSave = false;
-if (ST.adminPw && ST.adminPw.length < 64) {
-  ST.adminPw = await hashPassword(ST.adminPw);
-  needsSave = true;
-}
+// Inicializa o aplicativo e sincroniza com a Nuvem
+export async function initApp() {
+  let data = await StorageService.getDatabase();
+  const defaultPwHash = await hashPassword('1234');
+  
+  // Se o banco novo estiver vazio, cria a estrutura inicial
+  if (!data) {
+    data = {
+      drivers: [
+        {name:'Carlos',password:defaultPwHash}, {name:'Marcos',password:defaultPwHash},
+        {name:'Rafael',password:defaultPwHash}, {name:'Leandro',password:defaultPwHash}
+      ],
+      services: [],
+      adminPw: defaultPwHash,
+      cacambas: []
+    };
+    await StorageService.saveDatabase(data);
+  }
 
-if(Array.isArray(ST.drivers)){
-  for (let i = 0; i < ST.drivers.length; i++) {
-    let d = ST.drivers[i];
-    if (typeof d === 'string') {
-      ST.drivers[i] = {name: d, password: defaultPwHash};
-      needsSave = true;
-    } else if (d.password && d.password.length < 64) {
-      ST.drivers[i].password = await hashPassword(d.password);
-      needsSave = true;
+  // Migrações de segurança
+  let needsSave = false;
+  if (data.adminPw && data.adminPw.length < 64) {
+    data.adminPw = await hashPassword(data.adminPw);
+    needsSave = true;
+  }
+
+  if(Array.isArray(data.drivers)){
+    for (let i = 0; i < data.drivers.length; i++) {
+      let d = data.drivers[i];
+      if (typeof d === 'string') {
+        data.drivers[i] = {name: d, password: defaultPwHash};
+        needsSave = true;
+      } else if (d.password && d.password.length < 64) {
+        data.drivers[i].password = await hashPassword(d.password);
+        needsSave = true;
+      }
     }
   }
-}
 
-if(!Array.isArray(ST.cacambas)) { ST.cacambas = []; needsSave = true; }
-if(needsSave) save();
+  if(!Array.isArray(data.cacambas)) { data.cacambas = []; needsSave = true; }
+  
+  ST = data; 
+  if(needsSave) save();
+}
 
 export const AppState = {
   currentDriverName: '',

@@ -1,11 +1,22 @@
+import { initApp } from './state.js'; 
 import { renderLogin, openPwModal, closePwModal, checkPw, logout } from './views/login.js';
 import { changeDay, setDay, addCabToSvc, removeCabFromSvc, toggle } from './views/driver.js';
 import { addService, delSvc, addDriver, rmDrv, changePw, genReport, exportPDF, exportCSV, registerSingleCab, registerBatchCabs, removeCab, renderCabList, toggleCabHistory, stab, updateDriverName, updateDriverPassword, renderAdminList } from './views/admin.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  
+  // Tela de carregamento enquanto conecta ao Firebase
+  const loadingMsg = document.createElement('div');
+  loadingMsg.id = 'loading-cloud';
+  loadingMsg.innerHTML = '<div style="position:fixed;inset:0;background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center;font-size:16px;color:#2E7D32;font-weight:bold;font-family:sans-serif;">Conectando à nuvem... ☁️</div>';
+  document.body.appendChild(loadingMsg);
+
+  await initApp(); 
+
+  loadingMsg.remove();
   renderLogin();
 
-  // Static Elements
+  // Eventos de Teclado e Cliques Estáticos
   document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPw(); });
   document.getElementById('btn-modal-cancel').addEventListener('click', closePwModal);
   document.getElementById('btn-modal-confirm').addEventListener('click', checkPw);
@@ -40,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-change-pw').addEventListener('click', changePw);
 });
 
-// Dynamic Elements via Event Delegation
+// Delegação de Eventos para elementos dinâmicos
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
