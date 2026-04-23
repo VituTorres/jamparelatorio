@@ -1,7 +1,9 @@
 import { StorageService } from './storage.js';
 import { hashPassword } from './utils.js';
 
-export const TODAY = new Date().toISOString().split('T')[0];
+// LÓGICA DE DATA LOCAL (Corrigindo o erro da meia-noite/ISOString)
+const _d = new Date();
+export const TODAY = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}-${String(_d.getDate()).padStart(2, '0')}`;
 
 // Gera o hash da senha padrão (1234)
 const defaultPwHash = await hashPassword('1234');
@@ -11,7 +13,7 @@ const defaultState = {
     {name:'Carlos',password:defaultPwHash}, {name:'Marcos',password:defaultPwHash},
     {name:'Rafael',password:defaultPwHash}, {name:'Leandro',password:defaultPwHash}
   ],
-  services: [], // Começa 100% vazio
+  services: [],
   adminPw: defaultPwHash,
   cacambas: []
 };
@@ -22,7 +24,7 @@ export function save() {
   StorageService.saveDatabase(ST);
 }
 
-// Migration de Segurança: Converte senhas antigas para Hash SHA-256
+// Migração de Segurança: Converte senhas antigas para Hash SHA-256
 let needsSave = false;
 if (ST.adminPw && ST.adminPw.length < 64) {
   ST.adminPw = await hashPassword(ST.adminPw);
@@ -52,4 +54,3 @@ export const AppState = {
   currentUser: null,
   pwModalTarget: null
 };
-
