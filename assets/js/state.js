@@ -6,17 +6,20 @@ export const TODAY = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2
 
 export let ST = null; 
 
-export function save() {
-  if(ST) StorageService.saveDatabase(ST);
+// Agora o save é assíncrono para esperar a nuvem
+export async function save() {
+  if (ST) {
+    await StorageService.saveDatabase(ST);
+  }
 }
 
 export async function initApp() {
   try {
-    let data = await StorageService.getDatabase();
+    const data = await StorageService.getDatabase();
     const defaultPwHash = await hashPassword('1234');
     
     if (!data) {
-      data = {
+      const newData = {
         drivers: [
           {name:'Carlos',password:defaultPwHash}, {name:'Marcos',password:defaultPwHash},
           {name:'Rafael',password:defaultPwHash}, {name:'Leandro',password:defaultPwHash}
@@ -25,16 +28,18 @@ export async function initApp() {
         adminPw: defaultPwHash,
         cacambas: []
       };
-      await StorageService.saveDatabase(data);
+      await StorageService.saveDatabase(newData);
+      ST = newData;
+    } else {
+      ST = data;
     }
 
-    if(!data.services) data.services = [];
-    if(!data.cacambas) data.cacambas = [];
-    if(!data.drivers) data.drivers = [];
+    if(!ST.services) ST.services = [];
+    if(!ST.cacambas) ST.cacambas = [];
+    if(!ST.drivers) ST.drivers = [];
 
-    ST = data;
   } catch (e) {
-    console.error("Falha ao carregar ST:", e);
+    console.error("Erro no initApp:", e);
     throw e;
   }
 }

@@ -45,7 +45,6 @@ export function renderAdminList(){
     const cabHtml = cabs.length > 0 
       ? cabs.map(c=>`<span class="cab-tag" style="font-size:10px;padding:1px 5px">${c}</span>`).join('')
       : `<span style="font-size:11px;color:var(--mu);font-weight:600">${expected} caçamba(s) solicitada(s)</span>`;
-      
     const it=document.createElement('div');it.className='admin-list-item';
     it.innerHTML=`<span class="admin-list-item__badge ${sv.type}">${lbl}</span><div class="admin-list-item__info"><div class="admin-list-item__address">${sv.address}</div><div class="admin-list-item__meta">${sv.serviceDate} · ${sv.driver}${sv.client?' · '+sv.client:''}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${cabHtml}</div></div><span class="admin-list-item__status ${sv.done?'d':'p'}">${sv.done?'Feito':'Pend.'}</span><button class="btn-delete" data-action="del-svc" data-id="${sv.id}">🗑</button>`;
     list.appendChild(it);
@@ -91,9 +90,7 @@ export function addService(){
   const date=document.getElementById('f-date').value, cl=document.getElementById('f-cl').value.trim();
   const ad=document.getElementById('f-ad').value.trim(), tp=document.getElementById('f-tp').value, dr=document.getElementById('f-dr').value;
   const qtd = parseInt(document.getElementById('f-qtd-cab').value);
-  
   if(!date||!ad||!tp||!dr||isNaN(qtd)){alert('Preencha todos os campos obrigatórios.');return;}
-  
   ST.services.push({id:Date.now().toString(),client:cl,address:ad,type:tp,cacambas:[],qtd:qtd,driver:dr,done:false,serviceDate:date});
   save();
   ['f-cl','f-ad','f-tp','f-dr','f-qtd-cab'].forEach(id=>document.getElementById(id).value='');
@@ -113,15 +110,11 @@ export async function changePw(){
   msg.style.color='var(--gr)';msg.textContent='✓ Senha alterada!'; setTimeout(()=>msg.textContent='',3000);
 }
 
-// REPORTS
 export function renderRptFilters(){renderAdminDriverSelect();document.getElementById('rpt-from').value=TODAY;document.getElementById('rpt-to').value=TODAY;}
 function getFilteredSvcs(){
   const drvF=document.getElementById('rpt-driver').value, p=document.getElementById('rpt-period').value, now=new Date();let from,to;
-  if(p==='today'){from=to=TODAY;}else if(p==='week'){
-      const d=new Date(now);d.setDate(d.getDate()-d.getDay());
-      from=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      to=TODAY;
-  }else if(p==='month'){from=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';to=TODAY;}
+  if(p==='today'){from=to=TODAY;}else if(p==='week'){const d=new Date(now);d.setDate(d.getDate()-d.getDay());from=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;to=TODAY;}
+  else if(p==='month'){from=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';to=TODAY;}
   else{from=document.getElementById('rpt-from').value;to=document.getElementById('rpt-to').value;}
   return ST.services.filter(s=>{const d=s.serviceDate||TODAY;return d>=from&&d<=to&&(!drvF||s.driver===drvF);});
 }
@@ -131,34 +124,80 @@ export function genReport(){
   const total=svcs.length, ent=svcs.filter(s=>s.type==='entrega').length, ret=svcs.filter(s=>s.type==='retirada').length;
   const tro=svcs.filter(s=>s.type==='troca').length, done=svcs.filter(s=>s.done).length, pend=total-done;
   const totalC=svcs.reduce((a,s)=>a+(s.cacambas||[]).length,0);
-  const pct=total>0?Math.round(done/total*100):0;
-
   let html=`<div class="rpt-section"><div class="rpt-sech">📊 Relatório</div><div style="padding:11px 13px"><div class="stats-grid"><div class="stat-card"><div class="stat-label">Serviços</div><div class="stat-val">${total}</div></div><div class="stat-card"><div class="stat-label">Caçambas</div><div class="stat-val">${totalC}</div></div><div class="stat-card"><div class="stat-label">Feitos</div><div class="stat-val ok">${done}</div></div><div class="stat-card"><div class="stat-label">Pendentes</div><div class="stat-val pend">${pend}</div></div></div></div></div>`;
   document.getElementById('rpt-out').innerHTML=html;
   document.getElementById('exp-row').style.display=svcs.length?'flex':'none';
   window._rptSvcs=svcs;
 }
 
-export function exportPDF(){/* Código de PDF omitido por brevidade */}
-export function exportCSV(){/* Código de CSV omitido por brevidade */}
+export function exportPDF(){}
+export function exportCSV(){}
 
-// CAÇAMBAS
+function _setCabMsg(id,txt,ok){
+  const el=document.getElementById(id);if(!el)return;
+  el.textContent=txt; el.style.color=ok?'var(--gr)':'var(--re)';
+  setTimeout(()=>el.textContent='',3500);
+}
+
 export function registerSingleCab(){
     const inp=document.getElementById('cab-reg-num');
     const num = inp.value.trim();
-    if(!num||ST.cacambas.some(c=>c.num===num)) return;
+    if(!num){_setCabMsg('cab-reg-msg','Informe o número.',false);return;}
+    if(ST.cacambas.some(c=>c.num===num)){_setCabMsg('cab-reg-msg','Já cadastrada.',false);return;}
     ST.cacambas.push({num, createdAt: new Date().toISOString()});
-    save(); inp.value=''; renderCabList();
+    save(); inp.value=''; renderCabList(); _setCabMsg('cab-reg-msg','✓ Cadastrada!',true);
 }
-export function registerBatchCabs(){/* Código de Lote */}
-export function removeCab(num){if(confirm('Remover?')){ST.cacambas=ST.cacambas.filter(c=>c.num!==num);save();renderCabList();}}
-export function toggleCabHistory(num){const el=document.getElementById('cab-hist-'+num.replace(/[^a-zA-Z0-9_-]/g,'_'));if(el)el.style.display=el.style.display==='none'?'block':'none';}
+
+// FUNÇÃO DE LOTE ATUALIZADA PARA FIREBASE
+export async function registerBatchCabs(){
+  const fromV=parseInt(document.getElementById('cab-batch-from').value,10);
+  const toV=parseInt(document.getElementById('cab-batch-to').value,10);
+  const msgId = 'cab-batch-msg';
+  
+  if(isNaN(fromV) || isNaN(toV) || fromV < 1 || toV < fromV){
+    _setCabMsg(msgId,'Intervalo inválido.',false);
+    return;
+  }
+  
+  const btn = document.getElementById('btn-reg-batch-cab');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Salvando na Nuvem...";
+
+  let added=0;
+  const now=new Date().toISOString();
+  
+  for(let n=fromV; n<=toV; n++){
+    const num=String(n);
+    if(!ST.cacambas.some(c=>c.num===num)){
+      ST.cacambas.push({num, createdAt:now});
+      added++;
+    }
+  }
+
+  try {
+    await save(); // Espera o Firebase confirmar
+    renderCabList();
+    _setCabMsg(msgId, `✓ ${added} caçambas geradas!`, true);
+    document.getElementById('cab-batch-from').value = '';
+    document.getElementById('cab-batch-to').value = '';
+  } catch (err) {
+    _setCabMsg(msgId, 'Erro ao salvar lote.', false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+export function removeCab(num){if(confirm('Remover caçamba '+num+'?')){ST.cacambas=ST.cacambas.filter(c=>c.num!==num);save();renderCabList();}}
+
 export function renderCabList(){
   const list=document.getElementById('cab-list'); if(!list)return;
   list.innerHTML='';
-  ST.cacambas.forEach(c=>{
+  const sorted = [...ST.cacambas].sort((a,b)=>parseInt(a.num)-parseInt(b.num));
+  sorted.forEach(c=>{
     const row=document.createElement('div'); row.className='admin-list-item';
-    row.innerHTML=`<div style="flex:1">🟫 ${c.num}</div><button class="btn-delete" data-action="remove-cab" data-num="${c.num}">🗑</button>`;
+    row.innerHTML=`<div style="flex:1">🟫 <strong>${c.num}</strong></div><button class="btn-delete" data-action="remove-cab" data-num="${c.num}">🗑</button>`;
     list.appendChild(row);
   });
 }
