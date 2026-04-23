@@ -7,23 +7,23 @@
 <title>Jampa Caçambas</title>
 <link rel="icon" type="image/png" href="assets/images/logo.png">
 <link rel="stylesheet" href="assets/css/style.css">
-<script src="assets/js/script.js" defer></script>
+<script type="module" src="assets/js/main.js" defer></script>
+</head>
+<body>
 
-<!-- PASSWORD MODAL -->
 <div class="modal-overlay hidden" id="pw-modal">
   <div class="modal">
     <h2 id="pw-modal-title">🔐 Acesso</h2>
     <p id="pw-modal-sub">Digite a senha para continuar</p>
-    <input type="password" id="pw-input" placeholder="••••" onkeydown="if(event.key==='Enter')checkPw()" autocomplete="off">
+    <input type="password" id="pw-input" placeholder="••••" autocomplete="off">
     <div class="modal-err" id="pw-err"></div>
     <div class="modal-btns">
-      <button class="modal-cancel" onclick="closePwModal()">Cancelar</button>
-      <button class="modal-confirm" onclick="checkPw()">Entrar</button>
+      <button class="modal-cancel" id="btn-modal-cancel">Cancelar</button>
+      <button class="modal-confirm" id="btn-modal-confirm">Entrar</button>
     </div>
   </div>
 </div>
 
-<!-- SCREEN: LOGIN -->
 <div id="s-login" class="screen active">
   <div class="login-hero">
     <img src="assets/images/logo.png" alt="Jampa Caçambas" class="login-logo-img">
@@ -34,133 +34,126 @@
     <div class="login-section-label" style="margin-bottom:10px">Selecione seu perfil</div>
     <div id="login-driver-list" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="divider" style="margin:16px 0"></div>
-    <button class="driver-btn admin-btn" onclick="openPwModal()">
-      <div class="dav admin">⚙️</div>
+    <button class="driver-btn admin-btn" id="btn-admin-login">
+      <div class="avatar admin">⚙️</div>
       <span>Administrador</span>
-      <span class="dcnt admin-cnt">🔐 Senha</span>
+      <span class="badge-count admin-cnt">🔐 Senha</span>
     </button>
   </div>
 </div>
 
-<!-- SCREEN: DRIVER -->
 <div id="s-driver" class="screen">
-  <div class="hdr">
-    <img src="assets/images/logo.png" alt="Jampa Caçambas" class="hdr-logo">
+  <div class="app-header">
+    <img src="assets/images/logo.png" alt="Jampa Caçambas" class="app-header__logo">
     <div style="flex:1">
       <h1 id="drv-name-hdr"></h1>
       <small id="drv-sum"></small>
     </div>
-    <button class="hdr-btn" onclick="logout()">Sair</button>
+    <button class="app-header__btn btn-logout">Sair</button>
   </div>
-  <div class="body">
+  <div class="app-body">
     <div class="day-nav">
-      <button class="nav-btn" onclick="changeDay(-1)">‹</button>
+      <button class="nav-btn" id="btn-prev-day">‹</button>
       <div class="day-display">
         <div class="day-label" id="day-label"></div>
         <div class="day-sub" id="day-sub"></div>
       </div>
-      <button class="nav-btn" onclick="changeDay(1)">›</button>
+      <button class="nav-btn" id="btn-next-day">›</button>
     </div>
-    <input type="date" class="dp" id="date-picker" onchange="setDay(this.value)">
+    <input type="date" class="date-input" id="date-picker">
     <div id="drv-body" style="display:flex;flex-direction:column;gap:11px"></div>
   </div>
 </div>
 
-<!-- SCREEN: ADMIN -->
 <div id="s-admin" class="screen">
-  <div class="hdr">
-    <img src="assets/images/logo.png" alt="Jampa Caçambas" class="hdr-logo">
+  <div class="app-header">
+    <img src="assets/images/logo.png" alt="Jampa Caçambas" class="app-header__logo">
     <div style="flex:1">
       <h1>Painel Administrativo</h1>
       <small>Jampa Caçambas · Administrador</small>
     </div>
-    <button class="hdr-btn" onclick="logout()">Sair</button>
+    <button class="app-header__btn btn-logout">Sair</button>
   </div>
   <div class="tabs">
-    <button class="tab active" onclick="stab('t-add',0)">+ Novo</button>
-    <button class="tab" onclick="stab('t-list',1)">📋 Serviços</button>
-    <button class="tab" onclick="stab('t-drv',2)">👷 Equipe</button>
-    <button class="tab" onclick="stab('t-cab',3)">🟫 Caçambas</button>
-    <button class="tab" onclick="stab('t-rpt',4)">📊 Relatório</button>
-    <button class="tab" onclick="stab('t-cfg',5)">⚙️ Config</button>
+    <button class="tab active" data-action="stab" data-tab-id="t-add" data-tab-idx="0">+ Novo</button>
+    <button class="tab" data-action="stab" data-tab-id="t-list" data-tab-idx="1">📋 Serviços</button>
+    <button class="tab" data-action="stab" data-tab-id="t-drv" data-tab-idx="2">👷 Equipe</button>
+    <button class="tab" data-action="stab" data-tab-id="t-cab" data-tab-idx="3">🟫 Caçambas</button>
+    <button class="tab" data-action="stab" data-tab-id="t-rpt" data-tab-idx="4">📊 Relatório</button>
+    <button class="tab" data-action="stab" data-tab-id="t-cfg" data-tab-idx="5">⚙️ Config</button>
   </div>
-  <div class="body" style="padding-top:11px">
+  <div class="app-body" style="padding-top:11px">
 
-    <!-- ADD SERVICE -->
-    <div id="t-add" class="tc active">
+    <div id="t-add" class="tab-panel active">
       <div class="card">
-        <div class="ctit">Cadastrar Novo Serviço</div>
-        <div class="fg"><label>Data do serviço *</label><input type="date" id="f-date"></div>
-        <div class="fg"><label>Cliente (opcional)</label><input type="text" id="f-cl" placeholder="Nome do cliente"></div>
-        <div class="fg"><label>Endereço *</label><input type="text" id="f-ad" placeholder="Rua, número, bairro"></div>
-        <div class="fg"><label>Tipo de serviço *</label>
+        <div class="card__header">Cadastrar Novo Serviço</div>
+        <div class="form-group"><label>Data do serviço *</label><input type="date" id="f-date"></div>
+        <div class="form-group"><label>Cliente (opcional)</label><input type="text" id="f-cl" placeholder="Nome do cliente"></div>
+        <div class="form-group"><label>Endereço *</label><input type="text" id="f-ad" placeholder="Rua, número, bairro"></div>
+        <div class="form-group"><label>Tipo de serviço *</label>
           <select id="f-tp"><option value="">Selecione...</option><option value="entrega">📦 Entrega</option><option value="retirada">♻️ Retirada</option><option value="troca">🔄 Troca</option></select>
         </div>
-        <div class="fg">
-          <label>Quantidade de caçambas *</label>
-          <input type="number" id="f-cab-qty" min="1" max="20" placeholder="Ex: 2 — o motorista preencherá os números">
-          <div style="font-size:11px;color:var(--mu);margin-top:2px">O motorista informará o número de cada caçamba na tela dele.</div>
+        <div class="form-group">
+          <label>Quantidade de Caçambas *</label>
+          <input type="number" id="f-qtd-cab" min="0" placeholder="Ex: 1, 2... (0 se for apenas visita)">
         </div>
-        <div class="fg" style="border-bottom:none"><label>Motorista *</label><select id="f-dr"><option value="">Selecione...</option></select></div>
-        <button class="sub-btn" id="sub-btn" onclick="addService()">Cadastrar Serviço</button>
+        <div class="form-group" style="border-bottom:none"><label>Motorista *</label><select id="f-dr"><option value="">Selecione...</option></select></div>
+        <button class="sub-btn" id="sub-btn">Cadastrar Serviço</button>
       </div>
     </div>
 
-    <!-- LIST -->
-    <div id="t-list" class="tc">
+    <div id="t-list" class="tab-panel">
       <div style="display:flex;gap:7px">
-        <select id="filter-drv" style="flex:1;border:1.5px solid var(--br);border-radius:9px;padding:8px 11px;font-size:13px;color:var(--tx);background:var(--bg);outline:none" onchange="renderAdminList()">
+        <select id="filter-drv" style="flex:1;border:1.5px solid var(--br);border-radius:9px;padding:8px 11px;font-size:13px;color:var(--tx);background:var(--bg);outline:none">
           <option value="">Todos os motoristas</option>
         </select>
-        <input type="date" id="filter-date" style="flex:1;border:1.5px solid var(--br);border-radius:9px;padding:8px 11px;font-size:13px;color:var(--tx);background:var(--bg);outline:none" onchange="renderAdminList()">
+        <input type="date" id="filter-date" style="flex:1;border:1.5px solid var(--br);border-radius:9px;padding:8px 11px;font-size:13px;color:var(--tx);background:var(--bg);outline:none">
       </div>
-      <div class="card"><div class="ctit">Serviços</div><div id="admin-list"></div></div>
+      <div class="card"><div class="card__header">Serviços</div><div id="admin-list"></div></div>
     </div>
 
-    <!-- TEAM -->
-    <div id="t-drv" class="tc">
+    <div id="t-drv" class="tab-panel">
       <div class="card">
-        <div class="ctit">Motoristas da Equipe</div>
+        <div class="card__header">Motoristas da Equipe</div>
         <div id="drv-admin"></div>
         <div class="add-area" style="flex-wrap:wrap;gap:7px">
-          <input class="nd-inp" id="nd-inp" placeholder="Nome do motorista" style="flex:1 1 100%">
-          <input class="nd-inp" id="nd-pw-inp" type="password" placeholder="Senha (mín. 3 caracteres)" autocomplete="new-password" onkeydown="if(event.key==='Enter')addDriver()" style="flex:1 1 100%">
-          <button class="add-btn" onclick="addDriver()" style="flex:1 1 100%">+ Adicionar Motorista</button>
+          <input class="new-driver-input" id="nd-inp" placeholder="Nome do motorista" style="flex:1 1 100%">
+          <input class="new-driver-input" id="nd-pw-inp" type="password" placeholder="Senha (mín. 3 caracteres)" autocomplete="new-password" style="flex:1 1 100%">
+          <button class="add-btn" id="btn-add-driver" style="flex:1 1 100%">+ Adicionar Motorista</button>
         </div>
       </div>
     </div>
 
-    <!-- CAÇAMBAS -->
-    <div id="t-cab" class="tc">
+    <div id="t-cab" class="tab-panel">
       <div class="card">
-        <div class="ctit">Cadastrar Caçambas</div>
-        <div class="fg">
+        <div class="card__header">Cadastrar Caçambas</div>
+        <div class="form-group">
           <label>Cadastro individual</label>
           <div style="display:flex;gap:6px">
-            <input class="cnin" id="cab-reg-num" type="text" placeholder="Nº da caçamba (ex: 42)" onkeydown="if(event.key==='Enter'){event.preventDefault();registerSingleCab()}" style="flex:1">
-            <button class="cab-add-btn" onclick="registerSingleCab()">+ Cadastrar</button>
+            <input class="form-control" id="cab-reg-num" type="text" placeholder="Nº da caçamba (ex: 42)" style="flex:1">
+            <button class="cab-add-btn" id="btn-reg-single-cab">+ Cadastrar</button>
           </div>
           <div id="cab-reg-msg" style="font-size:11px;min-height:14px;margin-top:4px"></div>
         </div>
-        <div class="fg" style="border-bottom:none">
+        <div class="form-group" style="border-bottom:none">
           <label>Cadastro em lote</label>
           <div style="display:flex;gap:6px">
-            <input class="cnin" id="cab-batch-from" type="number" min="1" placeholder="Início (ex: 1)">
-            <input class="cnin" id="cab-batch-to" type="number" min="1" placeholder="Fim (ex: 200)">
+            <input class="form-control" id="cab-batch-from" type="number" min="1" placeholder="Início (ex: 1)">
+            <input class="form-control" id="cab-batch-to" type="number" min="1" placeholder="Fim (ex: 200)">
           </div>
-          <button class="sub-btn" style="margin:8px 0 0 0;width:100%" onclick="registerBatchCabs()">Gerar lote</button>
+          <button class="sub-btn" id="btn-reg-batch-cab" style="margin:8px 0 0 0;width:100%">Gerar lote</button>
           <div id="cab-batch-msg" style="font-size:11px;min-height:14px;margin-top:4px"></div>
         </div>
       </div>
 
       <div class="card">
-        <div class="ctit" style="display:flex;align-items:center;gap:8px">
+        <div class="card__header" style="display:flex;align-items:center;gap:8px">
           <span style="flex:1">Caçambas cadastradas</span>
           <span id="cab-count-info" style="font-weight:400;color:var(--mu);font-size:11px"></span>
         </div>
         <div style="display:flex;gap:7px;padding:10px 13px;border-bottom:.5px solid var(--br)">
-          <input class="cnin" type="text" id="cab-search" placeholder="🔍 Buscar número" oninput="renderCabList()" style="flex:1">
-          <select class="cnin" id="cab-filter-status" onchange="renderCabList()" style="flex:1">
+          <input class="form-control" type="text" id="cab-search" placeholder="🔍 Buscar número" style="flex:1">
+          <select class="form-control" id="cab-filter-status" style="flex:1">
             <option value="">Todos</option>
             <option value="Disponível">Disponível</option>
             <option value="Em uso">Em uso</option>
@@ -170,8 +163,7 @@
       </div>
     </div>
 
-    <!-- REPORT -->
-    <div id="t-rpt" class="tc">
+    <div id="t-rpt" class="tab-panel">
       <div class="rpt-filters">
         <div class="filter-row">
           <select id="rpt-driver"><option value="">Todos os motoristas</option></select>
@@ -185,25 +177,24 @@
         <div class="filter-row" id="custom-dates" style="display:none">
           <input type="date" id="rpt-from"><input type="date" id="rpt-to">
         </div>
-        <button class="rpt-btn" onclick="genReport()">📊 Gerar Relatório</button>
+        <button class="rpt-btn" id="btn-gen-report">📊 Gerar Relatório</button>
       </div>
       <div class="exp-row" id="exp-row" style="display:none">
-        <button class="exp-btn pdf" onclick="exportPDF()">🖨️ Exportar PDF</button>
-        <button class="exp-btn xls" onclick="exportCSV()">📥 Exportar Excel</button>
+        <button class="exp-btn pdf" id="btn-exp-pdf">🖨️ Exportar PDF</button>
+        <button class="exp-btn xls" id="btn-exp-csv">📥 Exportar Excel</button>
       </div>
       <div id="rpt-out"></div>
     </div>
 
-    <!-- CONFIG -->
-    <div id="t-cfg" class="tc">
+    <div id="t-cfg" class="tab-panel">
       <div class="card">
-        <div class="ctit">🔐 Alterar Senha do Administrador</div>
+        <div class="card__header">🔐 Alterar Senha do Administrador</div>
         <div class="pw-section">
           <div style="font-size:12px;color:var(--mu);margin-bottom:4px">Senha atual padrão: <strong>1234</strong></div>
           <input class="pw-inp" type="password" id="pw-cur" placeholder="Senha atual">
           <input class="pw-inp" type="password" id="pw-new" placeholder="Nova senha">
           <input class="pw-inp" type="password" id="pw-new2" placeholder="Confirmar nova senha">
-          <button class="pw-btn" onclick="changePw()">Salvar Nova Senha</button>
+          <button class="pw-btn" id="btn-change-pw">Salvar Nova Senha</button>
           <div id="pw-msg" style="font-size:12px;text-align:center;min-height:16px"></div>
         </div>
       </div>
@@ -211,3 +202,5 @@
 
   </div>
 </div>
+</body>
+</html>
