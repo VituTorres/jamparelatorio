@@ -119,6 +119,14 @@ function getFilteredSvcs(){
   return ST.services.filter(s=>{const d=s.serviceDate||TODAY;return d>=from&&d<=to&&(!drvF||s.driver===drvF);});
 }
 
+function periodLabel(){
+  const p=document.getElementById('rpt-period').value, now=new Date();
+  if(p==='today')return now.toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'});
+  if(p==='week')return 'Esta semana';
+  if(p==='month')return now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  return (document.getElementById('rpt-from').value||'')+' → '+(document.getElementById('rpt-to').value||'');
+}
+
 export function genReport(){
   const svcs=getFilteredSvcs(), drv=document.getElementById('rpt-driver').value;
   const total=svcs.length, ent=svcs.filter(s=>s.type==='entrega').length, ret=svcs.filter(s=>s.type==='retirada').length;
@@ -128,10 +136,26 @@ export function genReport(){
   document.getElementById('rpt-out').innerHTML=html;
   document.getElementById('exp-row').style.display=svcs.length?'flex':'none';
   window._rptSvcs=svcs;
+  window._rptLabel=periodLabel();
+  window._rptDrv=drv;
 }
 
-export function exportPDF(){}
-export function exportCSV(){}
+export function exportPDF(){
+  const svcs=window._rptSvcs||[], lbl=window._rptLabel||'', drv=window._rptDrv||'';
+  if(!svcs.length){alert('Nenhum serviço para exportar. Gere um relatório primeiro.');return;}
+  const done=svcs.filter(s=>s.done).length, pct=svcs.length?Math.round(done/svcs.length*100):0;
+  const ent=svcs.filter(s=>s.type==='entrega').length, ret=svcs.filter(s=>s.type==='retirada').length, tro=svcs.filter(s=>s.type==='troca').length;
+  const totalC=svcs.reduce((a,s)=>a+((s.cacambas||[]).filter(c=>c)).length,0);
+  const rows=svcs.map(s=>{
+    const t={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[s.type]||'';
+    const cabs=((s.cacambas||[s.num||'?']).filter(c=>c)).join(', ');
+    return `<tr style="border-bottom:1px solid #e5e3dc"><td style="padding:6px 8px;font-size:12px">${_escHtml(s.serviceDate||'')}</td><td style="padding:6px 8px;font-size:12px">${_escHtml(s.address||'')}</td><td style="padding:6px 8px;font-size:12px">${t}</td><td style="padding:6px 8px;font-size:12px">${_escHtml(cabs)}</td><td style="padding:6px 8px;font-size:12px">${_escHtml(s.driver||'')}</td><td style="padding:6px 8px;font-size:12px;font-weight:600;color:${s.done?'#1B5E20':'#A32D2D'}">${s.done?'Concluído':'Pendente'}</td></tr>`;
+  }).join('');
+  const w=window.open('','_blank');
+  if(!w){alert('Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.');return;}
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Jampa Caçambas</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#1a1917}h1{color:#2E7D32;font-size:18px;margin-bottom:3px}.sub{color:#6b6963;font-size:12px;margin-bottom:20px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}.sc{border:1px solid #e2e0d8;border-radius:7px;padding:10px}.sl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}.sv{font-size:20px;font-weight:700}table{width:100%;border-collapse:collapse}th{background:#F8F7F4;padding:7px 8px;font-size:10px;text-align:left;border-bottom:2px solid #e2e0d8;color:#6b6963;text-transform:uppercase}@media print{body{padding:14px}}</style></head><body><h1>Jampa Caçambas — Relatório</h1><div class="sub">${_escHtml(lbl)}${drv?' · '+_escHtml(drv):''} · Gerado em ${new Date().toLocaleString('pt-BR')}</div><div class="sg"><div class="sc"><div class="sl">Serviços</div><div class="sv">${svcs.length}</div></div><div class="sc"><div class="sl">Caçambas</div><div class="sv">${totalC}</div></div><div class="sc"><div class="sl">Concluídos</div><div class="sv" style="color:#1B5E20">${done}</div></div><div class="sc"><div class="sl">Taxa</div><div class="sv">${pct}%</div></div></div><p style="font-size:11px;color:#6b6963;margin-bottom:14px">📦 ${ent} Entregas &nbsp;♻️ ${ret} Retiradas &nbsp;🔄 ${tro} Trocas</p><table><thead><tr><th>Data</th><th>Endereço</th><th>Tipo</th><th>Caçambas</th><th>Motorista</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=function(){setTimeout(function(){window.print();},300);}<\/script></body></html>`);
+  w.document.close();
+}
 
 function _setCabMsg(id,txt,ok){
   const el=document.getElementById(id);if(!el)return;
