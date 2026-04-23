@@ -11,7 +11,6 @@ let ST = JSON.parse(localStorage.getItem('cacamba_v4')||'null') || {
   adminPw: '1234'
 };
 function save(){localStorage.setItem('cacamba_v4',JSON.stringify(ST))}
-// Migration: convert legacy string-based drivers to {name,password}
 if(Array.isArray(ST.drivers)){
   ST.drivers = ST.drivers.map(d => typeof d === 'string' ? {name:d, password:'1234'} : {name:d.name, password:(d.password&&d.password.length>=3)?d.password:'1234'});
 }
@@ -20,11 +19,9 @@ save();
 
 let currentDriverName = '';
 let currentDay = TODAY;
-let pendingChips = [];
-let currentUser = null; // {name, role: 'driver'|'admin'}
-let pwModalTarget = null; // {type:'admin'} | {type:'driver', name}
+let currentUser = null;
+let pwModalTarget = null;
 
-// Seed demo
 if(!ST.services.length){
   const types=['entrega','retirada','troca'];
   const addrs=['Rua das Flores, 123','Av. Brasil, 456','Rua 7 de Setembro, 89','Rua Ipiranga, 320','Av. Paulista, 1000','Rua Augusta, 55','Rua Consolação, 210'];
@@ -61,21 +58,15 @@ function closePwModal(){pwModalTarget=null;document.getElementById('pw-modal').c
 function checkPw(){
   const val=document.getElementById('pw-input').value;
   let ok=false;
-  if(pwModalTarget&&pwModalTarget.type==='admin'){
-    ok=(val===ST.adminPw);
-  } else if(pwModalTarget&&pwModalTarget.type==='driver'){
+  if(pwModalTarget&&pwModalTarget.type==='admin') ok=(val===ST.adminPw);
+  else if(pwModalTarget&&pwModalTarget.type==='driver'){
     const d=ST.drivers.find(x=>x.name===pwModalTarget.name);
     ok=!!(d && d.password===val);
   }
   if(ok){
-    const target=pwModalTarget;
-    closePwModal();
-    if(target.type==='admin'){
-      currentUser={name:'Administrador',role:'admin'};
-      goAdmin();
-    } else {
-      goDriver(target.name);
-    }
+    const target=pwModalTarget; closePwModal();
+    if(target.type==='admin'){currentUser={name:'Administrador',role:'admin'};goAdmin();}
+    else goDriver(target.name);
   } else {
     document.getElementById('pw-err').textContent='Senha incorreta. Tente novamente.';
     document.getElementById('pw-input').classList.add('error');
@@ -96,12 +87,10 @@ function goAdmin(){
   document.getElementById('filter-date').value='';
   renderAdminList();
   renderRptFilters();
-  pendingChips=[];renderChips();
 }
 
 function goDriver(name){
-  currentDriverName=name;
-  currentDay=TODAY;
+  currentDriverName=name; currentDay=TODAY;
   currentUser={name,role:'driver'};
   showScreen('s-driver');
   document.getElementById('drv-name-hdr').textContent='👷 '+name;
@@ -146,6 +135,40 @@ function dayLabel(ds){
   return{main,sub:dm,today:diff===0};
 }
 
+// ── VALIDAÇÃO COMPLETA DE CAÇAMBA ──
+function validateCabForService(cabNum, serviceId, slotIndex){
+  const num = normalizeCabNum(cabNum);
+  if(!num) return {ok:false, msg:'Informe um número válido.'};
+
+  // 1. Existência no cadastro
+  if(!ST.cacambas.some(c => c.num === num)){
+    return {ok:false, msg:'Caçamba ' + num + ' não cadastrada. Cadastre-a em Admin → Caçambas antes de usar.'};
+  }
+
+  // 2. Unicidade dentro do mesmo serviço (outros slots)
+  const sv = ST.services.find(s => s.id === serviceId);
+  if(sv){
+    const duplicate = (sv.cacambas||[]).some((c,i)=> i !== slotIndex && c === num);
+    if(duplicate) return {ok:false, msg:'Caçamba ' + num + ' já foi adicionada neste serviço.'};
+  }
+
+  // 3. Vinculada a outro serviço ativo (pendente)
+  const activeConflict = ST.services.find(s =>
+    s.id !== serviceId && !s.done && (s.cacambas||[]).includes(num)
+  );
+  if(activeConflict){
+    return {ok:false, msg:'Caçamba ' + num + ' já está vinculada a um serviço ativo em: ' + activeConflict.address + '.'};
+  }
+
+  // 4. Status de ocupação (entregue e não retirada ainda)
+  const status = getCabStatus(num);
+  if(status.status === 'Em uso'){
+    return {ok:false, msg:'Esta caçamba já está em uso em outro endereço. Realize a retirada antes de reutilizá-la.'};
+  }
+
+  return {ok:true, num};
+}
+
 // ── DRIVER SCREEN ──
 function renderDriver(){
   const lbl=dayLabel(currentDay);
@@ -163,58 +186,88 @@ function renderDriver(){
     bl.innerHTML=`<div class="sech sech-${sec.c}"><span>${sec.i}</span><span class="sect">${sec.l}</span><span class="secb">${pn}/${items.length}</span></div>`;
     [...items.filter(s=>!s.done),...items.filter(s=>s.done)].forEach(sv=>{
       const cabs=Array.isArray(sv.cacambas)?sv.cacambas:(sv.num?[sv.num]:[]);
+      const filledCabs=cabs.filter(c=>c);
       const it=document.createElement('div');it.className='svi'+(sv.done?' done':'');
+      const sid=_escHtml(sv.id);
+
       let cabSection;
       if(sv.done){
-        const cabHtml=cabs.length?cabs.map(c=>`<span class="cab-tag">🟫 ${c}</span>`).join(''):'<span style="font-size:11px;color:var(--mu)">sem caçamba</span>';
+        const cabHtml=filledCabs.length
+          ?filledCabs.map(c=>`<span class="cab-tag">🟫 ${_escHtml(c)}</span>`).join('')
+          :'<span style="font-size:11px;color:var(--mu)">sem caçamba</span>';
         cabSection=`<div class="cab-row">${cabHtml}</div>`;
       } else {
-        const chipsHtml=cabs.map((c,i)=>`<span class="cab-chip">🟫 ${c} <button type="button" onclick="removeCabFromSvc('${sv.id}',${i})">×</button></span>`).join('');
-        const emptyNote=cabs.length?'':'<div class="cab-empty-note">⚠️ Adicione pelo menos uma caçamba para concluir</div>';
-        cabSection=`<div class="svc-cab-box"><div class="cab-chips">${chipsHtml}</div><div class="cab-add-row"><input class="cnin" id="svc-in-${sv.id}" type="text" inputmode="numeric" placeholder="Nº da caçamba" onkeydown="if(event.key==='Enter'){event.preventDefault();addCabToSvc('${sv.id}')}"><button class="cab-add-btn" type="button" onclick="addCabToSvc('${sv.id}')">+ Caçamba</button></div>${emptyNote}</div>`;
+        // Slots numerados — motorista preenche o número de cada caçamba
+        const slotsHtml=cabs.map((c,i)=>{
+          if(c){
+            return `<div class="cab-slot"><span class="cab-slot-label">Caçamba ${i+1}</span><span class="cab-chip">🟫 ${_escHtml(c)} <button type="button" onclick="clearCabSlot('${sid}',${i})">×</button></span></div>`;
+          }
+          return `<div class="cab-slot"><span class="cab-slot-label">Caçamba ${i+1}</span><div class="cab-slot-input"><input class="cnin" id="svc-slot-${sid}-${i}" type="text" inputmode="numeric" placeholder="Nº da caçamba" onkeydown="if(event.key==='Enter'){event.preventDefault();fillCabSlot('${sid}',${i})}"><button class="cab-add-btn" type="button" onclick="fillCabSlot('${sid}',${i})">✓</button></div><div class="slot-err" id="svc-slot-err-${sid}-${i}"></div></div>`;
+        }).join('');
+        const pendingCount=cabs.filter(c=>!c).length;
+        const pendingNote=pendingCount>0
+          ?`<div class="cab-empty-note">⚠️ ${pendingCount} caçamba${pendingCount!==1?'s':''} pendente${pendingCount!==1?'s':''} de preenchimento</div>`
+          :'';
+        cabSection=`<div class="svc-cab-box">${slotsHtml}${pendingNote}</div>`;
       }
-      const canComplete = sv.done || cabs.length>0;
-      const btnClass = sv.done ? 'okb done' : (canComplete ? 'okb' : 'okb disabled');
+
+      const allFilled=sv.done||(cabs.length>0&&cabs.every(c=>c));
+      const btnClass=sv.done?'okb done':(allFilled?'okb':'okb disabled');
       const typeLabel={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[sv.type];
-      const cabCount=cabs.length?` · ${cabs.length} caçamba${cabs.length!==1?'s':''}`:' · 0 caçambas';
-      it.innerHTML=`<div class="svi-info"><div class="svi-addr">${sv.address}</div><div class="svi-type">${typeLabel}${cabCount}</div>${sv.client?`<div style="font-size:11px;color:var(--mu);margin-top:3px">👤 ${sv.client}</div>`:''}${cabSection}</div><button class="${btnClass}" onclick="toggle('${sv.id}')">✓</button>`;
+      const cabCount=` · ${cabs.length} caçamba${cabs.length!==1?'s':''}`;
+
+      it.innerHTML=`<div class="svi-info"><div class="svi-addr">${_escHtml(sv.address)}</div><div class="svi-type">${typeLabel}${cabCount}</div>${sv.client?`<div style="font-size:11px;color:var(--mu);margin-top:3px">👤 ${_escHtml(sv.client)}</div>`:''}${cabSection}</div><button class="${btnClass}" onclick="toggle('${sid}')">✓</button>`;
       bl.appendChild(it);
     });
     body.appendChild(bl);
   });
   if(!svcs.length)body.innerHTML='<div class="no-data">Nenhum serviço para este dia.<br><span style="font-size:12px">Use ‹ › para navegar entre os dias.</span></div>';
 }
-function addCabToSvc(id){
-  const inp=document.getElementById('svc-in-'+id);if(!inp)return;
+
+function fillCabSlot(serviceId, slotIndex){
+  const inp=document.getElementById('svc-slot-'+serviceId+'-'+slotIndex);
+  if(!inp)return;
   const v=inp.value.trim();if(!v)return;
-  const sv=ST.services.find(x=>x.id===id);if(!sv)return;
+  const sv=ST.services.find(x=>x.id===serviceId);if(!sv)return;
   if(!Array.isArray(sv.cacambas))sv.cacambas=[];
-  if(sv.cacambas.includes(v)){alert('Caçamba '+v+' já adicionada.');return;}
-  sv.cacambas.push(v);
+
+  const validation=validateCabForService(v, serviceId, slotIndex);
+  if(!validation.ok){
+    const errEl=document.getElementById('svc-slot-err-'+serviceId+'-'+slotIndex);
+    if(errEl){
+      errEl.textContent=validation.msg;
+      errEl.style.display='block';
+      setTimeout(()=>{if(errEl&&errEl.textContent===validation.msg)errEl.style.display='none';},5000);
+    } else {
+      alert(validation.msg);
+    }
+    inp.focus();inp.select();
+    return;
+  }
+
+  sv.cacambas[slotIndex]=validation.num;
   save();renderDriver();
 }
-function removeCabFromSvc(id,idx){
-  const sv=ST.services.find(x=>x.id===id);if(!sv||!Array.isArray(sv.cacambas))return;
-  sv.cacambas.splice(idx,1);
+
+function clearCabSlot(serviceId, slotIndex){
+  const sv=ST.services.find(x=>x.id===serviceId);if(!sv||!Array.isArray(sv.cacambas))return;
+  sv.cacambas[slotIndex]='';
   save();renderDriver();
 }
+
 function toggle(id){
   const s=ST.services.find(x=>x.id===id);if(!s)return;
   if(!s.done){
     const cabs=Array.isArray(s.cacambas)?s.cacambas:[];
-    if(!cabs.length){alert('Adicione pelo menos uma caçamba antes de concluir o serviço.');return;}
+    if(!cabs.length){alert('Adicione pelo menos uma caçamba antes de concluir.');return;}
+    const empty=cabs.filter(c=>!c).length;
+    if(empty>0){
+      alert('Preencha o número de todas as caçambas antes de concluir.\n('+empty+' caçamba'+(empty!==1?'s':'')+' sem número)');
+      return;
+    }
   }
   s.done=!s.done;save();renderDriver();
 }
-
-// ── CHIPS ──
-function renderChips(){
-  const area=document.getElementById('cab-chips');area.innerHTML='';
-  area.style.marginBottom=pendingChips.length?'7px':'0';
-  pendingChips.forEach((c,i)=>{const ch=document.createElement('span');ch.className='cab-chip';ch.innerHTML=`${c} <button onclick="removeChip(${i})">×</button>`;area.appendChild(ch);});
-}
-function addChip(){const inp=document.getElementById('cab-in');const v=inp.value.trim();if(!v)return;if(pendingChips.includes(v)){alert('Já adicionada.');return;}pendingChips.push(v);inp.value='';inp.focus();renderChips();}
-function removeChip(i){pendingChips.splice(i,1);renderChips();}
 
 // ── ADMIN CRUD ──
 function renderAdminDriverSelect(){
@@ -236,10 +289,13 @@ function renderAdminList(){
   list.innerHTML='';
   [...svcs].reverse().forEach(sv=>{
     const lbl={entrega:'📦 Entrega',retirada:'♻️ Retirada',troca:'🔄 Troca'}[sv.type];
-    const cabs=sv.cacambas||[sv.num||'?'];
-    const cabHtml=cabs.map(c=>`<span class="cab-tag" style="font-size:10px;padding:1px 5px">${c}</span>`).join('');
+    const allCabs=sv.cacambas||[sv.num||'?'];
+    const filledCabs=allCabs.filter(c=>c);
+    const pendingSlots=allCabs.filter(c=>!c).length;
+    const cabHtml=filledCabs.map(c=>`<span class="cab-tag" style="font-size:10px;padding:1px 5px">${_escHtml(c)}</span>`).join('');
+    const pendingHtml=pendingSlots>0?`<span class="cab-pending-badge">⏳ ${pendingSlots} pendente${pendingSlots!==1?'s':''}</span>`:'';
     const it=document.createElement('div');it.className='asi';
-    it.innerHTML=`<span class="asib ${sv.type}">${lbl}</span><div class="asi-inf"><div class="asi-addr">${sv.address}</div><div class="asi-meta">${sv.serviceDate} · ${sv.driver}${sv.client?' · '+sv.client:''}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${cabHtml}</div></div><span class="as-st ${sv.done?'d':'p'}">${sv.done?'Feito':'Pend.'}</span><button class="del-btn" onclick="delSvc('${sv.id}')">🗑</button>`;
+    it.innerHTML=`<span class="asib ${sv.type}">${lbl}</span><div class="asi-inf"><div class="asi-addr">${_escHtml(sv.address)}</div><div class="asi-meta">${sv.serviceDate} · ${_escHtml(sv.driver)}${sv.client?' · '+_escHtml(sv.client):''}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${cabHtml}${pendingHtml}</div></div><span class="as-st ${sv.done?'d':'p'}">${sv.done?'Feito':'Pend.'}</span><button class="del-btn" onclick="delSvc('${sv.id}')">🗑</button>`;
     list.appendChild(it);
   });
 }
@@ -248,8 +304,7 @@ function renderDrvAdmin(){
   const list=document.getElementById('drv-admin');if(!list)return;list.innerHTML='';
   ST.drivers.forEach((d,i)=>{
     const r=document.createElement('div');r.className='dr-row';
-    r.style.flexWrap='wrap';
-    r.style.gap='6px';
+    r.style.flexWrap='wrap'; r.style.gap='6px';
     const nameSafe=(d.name||'').replace(/"/g,'&quot;');
     const pwSafe=(d.password||'').replace(/"/g,'&quot;');
     r.innerHTML=`
@@ -275,8 +330,7 @@ function updateDriverName(i,v){
 function updateDriverPassword(i,v){
   const nv=(v||'').trim();
   if(!nv||nv.length<3){alert('A senha deve ter no mínimo 3 caracteres.');renderDrvAdmin();return;}
-  ST.drivers[i].password=nv;
-  save();
+  ST.drivers[i].password=nv;save();
 }
 
 function addService(){
@@ -285,16 +339,24 @@ function addService(){
   const ad=document.getElementById('f-ad').value.trim();
   const tp=document.getElementById('f-tp').value;
   const dr=document.getElementById('f-dr').value;
-  const inV=document.getElementById('cab-in').value.trim();
-  if(inV&&!pendingChips.includes(inV))pendingChips.push(inV);
-  document.getElementById('cab-in').value='';
+  const qtyEl=document.getElementById('f-cab-qty');
+  const qty=Math.max(1,Math.min(20,parseInt(qtyEl.value,10)||1));
+
   if(!date||!ad||!tp||!dr){alert('Preencha: Data, Endereço, Tipo e Motorista.');return;}
-  ST.services.push({id:Date.now().toString(),client:cl,address:ad,type:tp,cacambas:[...pendingChips],driver:dr,done:false,serviceDate:date});
-  save();pendingChips=[];renderChips();
+
+  // Gera slots vazios — motorista preencherá os números
+  const emptySlots=Array(qty).fill('');
+  ST.services.push({id:Date.now().toString(),client:cl,address:ad,type:tp,cacambas:emptySlots,driver:dr,done:false,serviceDate:date});
+  save();
+
   ['f-cl','f-ad'].forEach(id=>document.getElementById(id).value='');
   ['f-tp','f-dr'].forEach(id=>document.getElementById(id).value='');
-  const btn=document.getElementById('sub-btn');btn.textContent='✓ Cadastrado!';btn.style.background='var(--gr)';
-  setTimeout(()=>{btn.textContent='Cadastrar Serviço';btn.style.background='';},1600);
+  qtyEl.value='';
+
+  const btn=document.getElementById('sub-btn');
+  btn.textContent='✓ Cadastrado! ('+qty+' caçamba'+(qty!==1?'s':(qty===1?'':'s'))+')';
+  btn.style.background='var(--gr)';
+  setTimeout(()=>{btn.textContent='Cadastrar Serviço';btn.style.background='';},2000);
 }
 
 function delSvc(id){if(!confirm('Remover serviço?'))return;ST.services=ST.services.filter(s=>s.id!==id);save();renderAdminList();}
@@ -337,7 +399,8 @@ function getFilteredSvcs(){
   const drvF=document.getElementById('rpt-driver').value;
   const p=document.getElementById('rpt-period').value;
   const now=new Date();let from,to;
-  if(p==='today'){from=to=TODAY;}else if(p==='week'){const d=new Date(now);d.setDate(d.getDate()-d.getDay());from=d.toISOString().split('T')[0];to=TODAY;}
+  if(p==='today'){from=to=TODAY;}
+  else if(p==='week'){const d=new Date(now);d.setDate(d.getDate()-d.getDay());from=d.toISOString().split('T')[0];to=TODAY;}
   else if(p==='month'){from=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';to=TODAY;}
   else{from=document.getElementById('rpt-from').value;to=document.getElementById('rpt-to').value;}
   return ST.services.filter(s=>{const d=s.serviceDate||TODAY;return d>=from&&d<=to&&(!drvF||s.driver===drvF);});
@@ -348,10 +411,10 @@ function genReport(){
   const total=svcs.length,ent=svcs.filter(s=>s.type==='entrega').length,ret=svcs.filter(s=>s.type==='retirada').length;
   const tro=svcs.filter(s=>s.type==='troca').length,done=svcs.filter(s=>s.done).length,pend=total-done;
   const pct=total>0?Math.round(done/total*100):0;
-  const totalC=svcs.reduce((a,s)=>a+(s.cacambas||[]).length,0);
+  const totalC=svcs.reduce((a,s)=>a+((s.cacambas||[]).filter(c=>c)).length,0);
   let html=`<div class="rpt-section"><div class="rpt-sech">📊 ${periodLabel()}${drv?' · '+drv:''}</div><div style="padding:11px 13px"><div class="stats-grid"><div class="stat-card"><div class="stat-label">Serviços</div><div class="stat-val">${total}</div></div><div class="stat-card"><div class="stat-label">Caçambas</div><div class="stat-val">${totalC}</div></div><div class="stat-card"><div class="stat-label">Concluídos</div><div class="stat-val ok">${done}</div></div><div class="stat-card"><div class="stat-label">Pendentes</div><div class="stat-val pend">${pend}</div></div></div><div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap"><span style="background:var(--bll);color:var(--bld);border-radius:20px;padding:3px 9px;font-size:11px;font-weight:600">📦 ${ent}</span><span style="background:var(--grl);color:var(--grd);border-radius:20px;padding:3px 9px;font-size:11px;font-weight:600">♻️ ${ret}</span><span style="background:var(--aml);color:var(--amd);border-radius:20px;padding:3px 9px;font-size:11px;font-weight:600">🔄 ${tro}</span></div><div style="margin-top:9px"><div style="font-size:11px;color:var(--mu);margin-bottom:4px">Conclusão: ${pct}%</div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div></div></div>`;
-  if(!drv&&ST.drivers.length>1){html+=`<div class="rpt-section"><div class="rpt-sech">👷 Por Motorista</div>`;ST.drivers.forEach(drv2=>{const ds=svcs.filter(s=>s.driver===drv2.name);if(!ds.length)return;const dd=ds.filter(s=>s.done).length,dp=Math.round(dd/ds.length*100),dc=ds.reduce((a,s)=>a+(s.cacambas||[]).length,0);html+=`<div class="bdc-row"><div style="flex:1"><div style="font-size:13px;font-weight:600">${drv2.name}</div><div style="font-size:11px;color:var(--mu)">${ds.length} serviço${ds.length!==1?'s':''} · ${dc} caçamba${dc!==1?'s':''} · ${dd} feito${dd!==1?'s':''}</div><div class="progress-bar"><div class="progress-fill" style="width:${dp}%"></div></div></div><span class="rpt-st done" style="margin-left:8px">${dp}%</span></div>`;});html+=`</div>`;}
-  if(svcs.length){html+=`<div class="rpt-section"><div class="rpt-sech">📋 Lista Detalhada</div>`;[...svcs.filter(s=>!s.done),...svcs.filter(s=>s.done)].forEach(s=>{const lbl={entrega:'📦 Entrega',retirada:'♻️ Retirada',troca:'🔄 Troca'}[s.type];const cabs=s.cacambas||[s.num||'?'];const cabHtml=cabs.map(c=>`<span class="cab-tag" style="font-size:10px;padding:1px 5px">${c}</span>`).join('');html+=`<div class="rpt-row"><span class="asib ${s.type}">${lbl}</span><div class="rpt-row-info"><div class="rpt-addr">${s.address}</div><div class="rpt-meta">${s.serviceDate} · ${s.driver}${s.client?' · '+s.client:''}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${cabHtml}</div></div><span class="rpt-st ${s.done?'done':'pend'}">${s.done?'Concluído':'Pendente'}</span></div>`;});html+=`</div>`;}
+  if(!drv&&ST.drivers.length>1){html+=`<div class="rpt-section"><div class="rpt-sech">👷 Por Motorista</div>`;ST.drivers.forEach(drv2=>{const ds=svcs.filter(s=>s.driver===drv2.name);if(!ds.length)return;const dd=ds.filter(s=>s.done).length,dp=Math.round(dd/ds.length*100),dc=ds.reduce((a,s)=>a+((s.cacambas||[]).filter(c=>c)).length,0);html+=`<div class="bdc-row"><div style="flex:1"><div style="font-size:13px;font-weight:600">${drv2.name}</div><div style="font-size:11px;color:var(--mu)">${ds.length} serviço${ds.length!==1?'s':''} · ${dc} caçamba${dc!==1?'s':''} · ${dd} feito${dd!==1?'s':''}</div><div class="progress-bar"><div class="progress-fill" style="width:${dp}%"></div></div></div><span class="rpt-st done" style="margin-left:8px">${dp}%</span></div>`;});html+=`</div>`;}
+  if(svcs.length){html+=`<div class="rpt-section"><div class="rpt-sech">📋 Lista Detalhada</div>`;[...svcs.filter(s=>!s.done),...svcs.filter(s=>s.done)].forEach(s=>{const lbl={entrega:'📦 Entrega',retirada:'♻️ Retirada',troca:'🔄 Troca'}[s.type];const cabs=(s.cacambas||[s.num||'?']).filter(c=>c);const cabHtml=cabs.map(c=>`<span class="cab-tag" style="font-size:10px;padding:1px 5px">${_escHtml(c)}</span>`).join('');html+=`<div class="rpt-row"><span class="asib ${s.type}">${lbl}</span><div class="rpt-row-info"><div class="rpt-addr">${_escHtml(s.address)}</div><div class="rpt-meta">${s.serviceDate} · ${_escHtml(s.driver)}${s.client?' · '+_escHtml(s.client):''}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${cabHtml}</div></div><span class="rpt-st ${s.done?'done':'pend'}">${s.done?'Concluído':'Pendente'}</span></div>`;});html+=`</div>`;}
   else{html+=`<div class="no-data">Nenhum serviço no período.</div>`;}
   document.getElementById('rpt-out').innerHTML=html;
   document.getElementById('exp-row').style.display=svcs.length?'flex':'none';
@@ -361,8 +424,8 @@ function exportPDF(){
   const svcs=window._rptSvcs||[],lbl=window._rptLabel||'',drv=window._rptDrv||'';
   const done=svcs.filter(s=>s.done).length,pct=svcs.length?Math.round(done/svcs.length*100):0;
   const ent=svcs.filter(s=>s.type==='entrega').length,ret=svcs.filter(s=>s.type==='retirada').length,tro=svcs.filter(s=>s.type==='troca').length;
-  const totalC=svcs.reduce((a,s)=>a+(s.cacambas||[]).length,0);
-  const rows=svcs.map(s=>{const t={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[s.type];const cabs=(s.cacambas||[s.num||'?']).join(', ');return`<tr style="border-bottom:1px solid #e5e3dc"><td style="padding:6px 8px;font-size:12px">${s.serviceDate}</td><td style="padding:6px 8px;font-size:12px">${s.address}</td><td style="padding:6px 8px;font-size:12px">${t}</td><td style="padding:6px 8px;font-size:12px">${cabs}</td><td style="padding:6px 8px;font-size:12px">${s.driver}</td><td style="padding:6px 8px;font-size:12px;font-weight:600;color:${s.done?'#1B5E20':'#A32D2D'}">${s.done?'Concluído':'Pendente'}</td></tr>`;}).join('');
+  const totalC=svcs.reduce((a,s)=>a+((s.cacambas||[]).filter(c=>c)).length,0);
+  const rows=svcs.map(s=>{const t={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[s.type];const cabs=((s.cacambas||[s.num||'?']).filter(c=>c)).join(', ');return`<tr style="border-bottom:1px solid #e5e3dc"><td style="padding:6px 8px;font-size:12px">${s.serviceDate}</td><td style="padding:6px 8px;font-size:12px">${s.address}</td><td style="padding:6px 8px;font-size:12px">${t}</td><td style="padding:6px 8px;font-size:12px">${cabs}</td><td style="padding:6px 8px;font-size:12px">${s.driver}</td><td style="padding:6px 8px;font-size:12px;font-weight:600;color:${s.done?'#1B5E20':'#A32D2D'}">${s.done?'Concluído':'Pendente'}</td></tr>`;}).join('');
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#1a1917}h1{color:#2E7D32;font-size:18px;margin-bottom:3px}.sub{color:#6b6963;font-size:12px;margin-bottom:20px}.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}.sc{border:1px solid #e2e0d8;border-radius:7px;padding:10px}.sl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}.sv{font-size:20px;font-weight:700}table{width:100%;border-collapse:collapse}th{background:#F8F7F4;padding:7px 8px;font-size:10px;text-align:left;border-bottom:2px solid #e2e0d8;color:#6b6963;text-transform:uppercase}@media print{body{padding:14px}}</style></head><body><h1>Jampa Caçambas — Relatório</h1><div class="sub">${lbl}${drv?' · '+drv:''} · Gerado em ${new Date().toLocaleString('pt-BR')}</div><div class="sg"><div class="sc"><div class="sl">Serviços</div><div class="sv">${svcs.length}</div></div><div class="sc"><div class="sl">Caçambas</div><div class="sv">${totalC}</div></div><div class="sc"><div class="sl">Concluídos</div><div class="sv" style="color:#1B5E20">${done}</div></div><div class="sc"><div class="sl">Taxa</div><div class="sv">${pct}%</div></div></div><p style="font-size:11px;color:#6b6963;margin-bottom:14px">📦 ${ent} Entregas &nbsp;♻️ ${ret} Retiradas &nbsp;🔄 ${tro} Trocas</p><table><thead><tr><th>Data</th><th>Endereço</th><th>Tipo</th><th>Caçambas</th><th>Motorista</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=function(){window.print();}<\/script></body></html>`);
   w.document.close();
@@ -370,7 +433,7 @@ function exportPDF(){
 function exportCSV(){
   const svcs=window._rptSvcs||[],lbl=(window._rptLabel||'relatorio').replace(/[^a-zA-Z0-9]/g,'_');
   const rows=[['Data','Endereço','Tipo','Caçambas','Qtd','Motorista','Cliente','Status']];
-  svcs.forEach(s=>{const t={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[s.type];const cabs=s.cacambas||[s.num||'?'];rows.push([s.serviceDate,s.address,t,cabs.join('; '),cabs.length,s.driver,s.client||'',s.done?'Concluído':'Pendente']);});
+  svcs.forEach(s=>{const t={entrega:'Entrega',retirada:'Retirada',troca:'Troca'}[s.type];const cabs=(s.cacambas||[s.num||'?']).filter(c=>c);rows.push([s.serviceDate,s.address,t,cabs.join('; '),cabs.length,s.driver,s.client||'',s.done?'Concluído':'Pendente']);});
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`relatorio_${lbl}.csv`;a.click();
@@ -386,7 +449,7 @@ function validateCabNum(v){
   return{ok:true,num:n};
 }
 function getCabStatus(num){
-  const related=ST.services.filter(s=>(s.cacambas||[]).includes(num));
+  const related=ST.services.filter(s=>(s.cacambas||[]).filter(c=>c).includes(num));
   const closed=related.filter(s=>s.done);
   closed.sort((a,b)=>{
     const da=(a.serviceDate||'')+'-'+(a.id||'');
@@ -399,7 +462,7 @@ function getCabStatus(num){
   return{status:'Disponível',address:null,service:null};
 }
 function getCabHistory(num){
-  return ST.services.filter(s=>(s.cacambas||[]).includes(num)).slice().sort((a,b)=>{
+  return ST.services.filter(s=>(s.cacambas||[]).filter(c=>c).includes(num)).slice().sort((a,b)=>{
     const da=(a.serviceDate||'')+'-'+(a.id||'');
     const db=(b.serviceDate||'')+'-'+(b.id||'');
     return db.localeCompare(da);
@@ -417,8 +480,7 @@ function registerSingleCab(){
   if(!res.ok){_setCabMsg('cab-reg-msg',res.msg,false);return;}
   if(ST.cacambas.some(c=>c.num===res.num)){_setCabMsg('cab-reg-msg','Caçamba nº '+res.num+' já está cadastrada.',false);return;}
   ST.cacambas.push({num:res.num,createdAt:new Date().toISOString()});
-  save();
-  inp.value='';inp.focus();
+  save(); inp.value='';inp.focus();
   _setCabMsg('cab-reg-msg','✓ Caçamba nº '+res.num+' cadastrada.',true);
   renderCabList();
 }
@@ -427,9 +489,7 @@ function registerBatchCabs(){
   const toEl=document.getElementById('cab-batch-to');
   const fromV=parseInt(fromEl.value,10);
   const toV=parseInt(toEl.value,10);
-  if(!Number.isInteger(fromV)||!Number.isInteger(toV)||fromV<1||toV<1){
-    _setCabMsg('cab-batch-msg','Informe início e fim como números inteiros maiores que zero.',false);return;
-  }
+  if(!Number.isInteger(fromV)||!Number.isInteger(toV)||fromV<1||toV<1){_setCabMsg('cab-batch-msg','Informe início e fim como números inteiros maiores que zero.',false);return;}
   if(toV<fromV){_setCabMsg('cab-batch-msg','O fim deve ser maior ou igual ao início.',false);return;}
   if(toV-fromV+1>2000){_setCabMsg('cab-batch-msg','Lote muito grande. Máximo de 2000 por vez.',false);return;}
   const existing=new Set(ST.cacambas.map(c=>c.num));
@@ -442,8 +502,7 @@ function registerBatchCabs(){
     existing.add(num);
     added++;
   }
-  save();
-  fromEl.value='';toEl.value='';
+  save(); fromEl.value='';toEl.value='';
   const parts=['✓ '+added+' cadastrada'+(added!==1?'s':'')];
   if(skipped)parts.push(skipped+' já existente'+(skipped!==1?'s (ignoradas)':' (ignorada)'));
   _setCabMsg('cab-batch-msg',parts.join(' · '),true);
@@ -498,8 +557,7 @@ function renderCabList(){
       return `<div style="font-size:11px;padding:4px 0;border-bottom:.5px dashed var(--br)"><strong>${_escHtml(h.serviceDate||'')}</strong> · ${lbl} · ${_escHtml(h.address||'')} · ${_escHtml(h.driver||'')} · ${st}</div>`;
     }).join('')||'<div style="font-size:11px;color:var(--mu);padding:4px 0">Sem utilizações registradas.</div>';
     const row=document.createElement('div');
-    row.className='asi';
-    row.style.flexWrap='wrap';
+    row.className='asi';row.style.flexWrap='wrap';
     row.innerHTML=`
       <div class="asi-inf" style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
