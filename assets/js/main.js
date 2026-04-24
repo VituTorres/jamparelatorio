@@ -3,6 +3,15 @@ import { renderLogin, openPwModal, closePwModal, checkPw, logout } from './views
 import { changeDay, setDay, addCabToSvc, removeCabFromSvc, toggle } from './views/driver.js';
 import { addService, delSvc, addDriver, rmDrv, changePw, genReport, exportPDF, registerSingleCab, registerBatchCabs, removeCab, renderCabList, stab, updateDriverName, updateDriverPassword } from './views/admin.js';
 
+// Registro do Service Worker para PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registrado!', reg))
+      .catch(err => console.log('Erro ao registrar SW:', err));
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const loader = document.createElement('div');
   loader.style = "position:fixed;inset:0;background:#fff;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;";
