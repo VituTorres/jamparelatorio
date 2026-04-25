@@ -1,20 +1,57 @@
-# Firebase
+# --- Firebase ---
 .firebase/
 .firebaserc
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
 
-# Dependencies
+# --- Dependências ---
 node_modules/
+jspm_packages/
+.pnpm-store/
 
-# Environment
+# --- Build e Saída ---
+dist/
+build/
+out/
+.next/
+.cache/
+*.log
+*.tsbuildinfo
+
+# --- Variáveis de Ambiente e Segredos ---
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+auth.json
 
-# IDE
+# --- IDEs e Editores ---
 .vscode/
+!.vscode/extensions.json
 .idea/
-*.swp
-*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.history/
 
-# OS
+# --- Sistema Operacional ---
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Outros arquivos inúteis ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+.stylelintcache
+.prettiercache
