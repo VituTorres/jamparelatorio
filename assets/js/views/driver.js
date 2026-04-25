@@ -49,23 +49,55 @@ export function renderDriver(){
       let cabSection;
       
       if(sv.done){
-        const cabHtml=cabs.length?cabs.map(c=>`<span class="cab-tag"><img src="assets/images/cacamba.png" style="width:14px;height:auto;margin-right:4px"> ${c}</span>`).join(''):'<span style="font-size:11px;color:var(--mu)">sem caçamba</span>';
-        cabSection=`<div class="cab-row">${cabHtml}</div>`;
-      } else {
-        const chipsHtml=cabs.map((c,i)=>`<span class="cab-chip"><img src="assets/images/cacamba.png" style="width:16px;height:auto;margin-right:4px"> ${c} <button type="button" data-action="remove-cab-svc" data-id="${sv.id}" data-idx="${i}">×</button></span>`).join('');
-        
-        let inputRow = '';
-        let emptyNote = '';
-        
-        if (expected === 0 || cabs.length < expected) {
-            const remain = expected > 0 ? expected - cabs.length : 0;
-            emptyNote = remain > 0 ? `<div class="cab-empty-note">⚠️ Adicione mais ${remain} caçamba(s) para concluir</div>` : '';
-            inputRow = `<div class="cab-add-row"><input class="form-control" id="svc-in-${sv.id}" type="text" inputmode="numeric" placeholder="Nº da caçamba" data-action="input-cab-svc" data-id="${sv.id}"><button class="cab-add-btn" type="button" data-action="add-cab-svc" data-id="${sv.id}">+ Caçamba</button></div>`;
+        if (sv.type === 'troca') {
+          const retCabs = sv.cacambasRetirada || [];
+          const entCabs = sv.cacambas || [];
+          const retHtml = retCabs.length ? retCabs.map(c=>`<span class="cab-tag ret"><img src="assets/images/cacamba.png" style="width:14px;height:auto;margin-right:4px"> ${c}</span>`).join('') : '<span style="font-size:11px;color:var(--mu)">-</span>';
+          const entHtml = entCabs.length ? entCabs.map(c=>`<span class="cab-tag ent"><img src="assets/images/cacamba.png" style="width:14px;height:auto;margin-right:4px"> ${c}</span>`).join('') : '<span style="font-size:11px;color:var(--mu)">-</span>';
+          cabSection = `<div class="cab-row-troca">
+            <div class="troca-col"><strong>Retirou:</strong> ${retHtml}</div>
+            <div class="troca-col"><strong>Entregou:</strong> ${entHtml}</div>
+          </div>`;
         } else {
-            emptyNote = `<div class="cab-empty-note" style="color:var(--gr);background:var(--grl)">✓ Quantidade pedida atingida</div>`;
+          const cabHtml=cabs.length?cabs.map(c=>`<span class="cab-tag"><img src="assets/images/cacamba.png" style="width:14px;height:auto;margin-right:4px"> ${c}</span>`).join(''):'<span style="font-size:11px;color:var(--mu)">sem caçamba</span>';
+          cabSection=`<div class="cab-row">${cabHtml}</div>`;
         }
-        
-        cabSection=`<div class="svc-cab-box"><div class="cab-chips">${chipsHtml}</div>${inputRow}${emptyNote}</div>`;
+      } else {
+        if (sv.type === 'troca') {
+          const retCabs = sv.cacambasRetirada || [];
+          const entCabs = sv.cacambas || [];
+          
+          const retChips = retCabs.map((c,i)=>`<span class="cab-chip ret"><img src="assets/images/cacamba.png" style="width:16px;height:auto;margin-right:4px"> ${c} <button type="button" data-action="remove-cab-troca" data-id="${sv.id}" data-type="retirada" data-idx="${i}">×</button></span>`).join('');
+          const entChips = entCabs.map((c,i)=>`<span class="cab-chip ent"><img src="assets/images/cacamba.png" style="width:16px;height:auto;margin-right:4px"> ${c} <button type="button" data-action="remove-cab-troca" data-id="${sv.id}" data-type="entrega" data-idx="${i}">×</button></span>`).join('');
+          
+          const retInput = retCabs.length < expected ? `<div class="cab-add-row"><input class="form-control" id="troca-ret-in-${sv.id}" type="text" inputmode="numeric" placeholder="Nº Retirada"><button class="cab-add-btn" type="button" data-action="add-cab-troca" data-id="${sv.id}" data-type="retirada">+</button></div>` : '';
+          const entInput = entCabs.length < expected ? `<div class="cab-add-row"><input class="form-control" id="troca-ent-in-${sv.id}" type="text" inputmode="numeric" placeholder="Nº Entrega"><button class="cab-add-btn" type="button" data-action="add-cab-troca" data-id="${sv.id}" data-type="entrega">+</button></div>` : '';
+          
+          cabSection = `<div class="svc-cab-box troca-box">
+            <div class="troca-field">
+              <label>♻️ Retirada (${retCabs.length}/${expected})</label>
+              <div class="cab-chips">${retChips}</div>
+              ${retInput}
+            </div>
+            <div class="troca-field">
+              <label>📦 Entrega (${entCabs.length}/${expected})</label>
+              <div class="cab-chips">${entChips}</div>
+              ${entInput}
+            </div>
+          </div>`;
+        } else {
+          const chipsHtml=cabs.map((c,i)=>`<span class="cab-chip"><img src="assets/images/cacamba.png" style="width:16px;height:auto;margin-right:4px"> ${c} <button type="button" data-action="remove-cab-svc" data-id="${sv.id}" data-idx="${i}">×</button></span>`).join('');
+          let inputRow = '';
+          let emptyNote = '';
+          if (expected === 0 || cabs.length < expected) {
+              const remain = expected > 0 ? expected - cabs.length : 0;
+              emptyNote = remain > 0 ? `<div class="cab-empty-note">⚠️ Adicione mais ${remain} caçamba(s) para concluir</div>` : '';
+              inputRow = `<div class="cab-add-row"><input class="form-control" id="svc-in-${sv.id}" type="text" inputmode="numeric" placeholder="Nº da caçamba" data-action="input-cab-svc" data-id="${sv.id}"><button class="cab-add-btn" type="button" data-action="add-cab-svc" data-id="${sv.id}">+ Caçamba</button></div>`;
+          } else {
+              emptyNote = `<div class="cab-empty-note" style="color:var(--gr);background:var(--grl)">✓ Quantidade pedida atingida</div>`;
+          }
+          cabSection=`<div class="svc-cab-box"><div class="cab-chips">${chipsHtml}</div>${inputRow}${emptyNote}</div>`;
+        }
       }
       
       const canComplete = sv.done || (expected === 0 ? true : cabs.length >= expected);
@@ -256,5 +288,76 @@ export async function toggle(id){
     const msgs={entrega:'Entrega efetuada com sucesso',retirada:'Retirada efetuada com sucesso',troca:'Troca efetuada com sucesso'};
     showToast(msgs[s.type]||'Concluído com sucesso');
   }
+  renderDriver();
+}
+
+export async function addCabTroca(id, type) {
+  const inputId = type === 'retirada' ? 'troca-ret-in-' + id : 'troca-ent-in-' + id;
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  const v = inp.value.trim();
+  if (!v) return;
+  const sv = ST.services.find(x => x.id === id);
+  if (!sv) return;
+
+  if (type === 'retirada') {
+    if (!sv.cacambasRetirada) sv.cacambasRetirada = [];
+    if (sv.cacambasRetirada.includes(v)) { alert('Caçamba ' + v + ' já adicionada na retirada.'); return; }
+    
+    const cabSistema = ST.cacambas.find(c => c.num === v);
+    if (!cabSistema) { alert('❌ Erro: A caçamba nº ' + v + ' não existe no sistema.'); return; }
+    
+    // Na troca, a retirada deve ser de uma caçamba em uso
+    if (cabSistema.status !== 'Em uso') {
+      alert(`❌ Erro: A caçamba nº ${v} não está em uso. Só é possível retirar caçambas que estão em uso.`);
+      return;
+    }
+
+    sv.cacambasRetirada.push(v);
+    cabSistema.retiradaServiceId = sv.id;
+  } else {
+    if (!sv.cacambas) sv.cacambas = [];
+    if (sv.cacambas.includes(v)) { alert('Caçamba ' + v + ' já adicionada na entrega.'); return; }
+    
+    const cabSistema = ST.cacambas.find(c => c.num === v);
+    if (!cabSistema) { alert('❌ Erro: A caçamba nº ' + v + ' não existe no sistema.'); return; }
+    
+    // Na troca, a entrega deve ser de uma caçamba disponível
+    if (cabSistema.status === 'Em uso') {
+      alert(`❌ Erro: A caçamba nº ${v} já está em uso.`);
+      return;
+    }
+
+    sv.cacambas.push(v);
+    cabSistema.status = 'Em uso';
+    cabSistema.servicoId = sv.id;
+    cabSistema.endereco = sv.address;
+  }
+
+  await save();
+  renderDriver();
+}
+
+export async function removeCabTroca(id, type, idx) {
+  const sv = ST.services.find(x => x.id === id);
+  if (!sv) return;
+
+  if (type === 'retirada') {
+    const num = sv.cacambasRetirada[idx];
+    const cab = ST.cacambas.find(c => c.num === num);
+    if (cab) delete cab.retiradaServiceId;
+    sv.cacambasRetirada.splice(idx, 1);
+  } else {
+    const num = sv.cacambas[idx];
+    const cab = ST.cacambas.find(c => c.num === num);
+    if (cab) {
+      delete cab.status;
+      delete cab.servicoId;
+      delete cab.endereco;
+    }
+    sv.cacambas.splice(idx, 1);
+  }
+
+  await save();
   renderDriver();
 }

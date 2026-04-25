@@ -1,6 +1,6 @@
 import { initApp } from './state.js'; 
 import { renderLogin, openPwModal, closePwModal, checkPw, logout } from './views/login.js';
-import { changeDay, setDay, addCabToSvc, removeCabFromSvc, toggle } from './views/driver.js';
+import { changeDay, setDay, addCabToSvc, removeCabFromSvc, toggle, addCabTroca, removeCabTroca } from './views/driver.js';
 import { addService, delSvc, addDriver, rmDrv, changePw, genReport, exportPDF, registerSingleCab, registerBatchCabs, removeCab, renderCabList, stab, updateDriverName, updateDriverPassword } from './views/admin.js';
 
 // Registro do Service Worker para PWA
@@ -57,6 +57,8 @@ document.addEventListener('click', e => {
   if(a.action === 'del-svc') delSvc(a.id);
   if(a.action === 'remove-cab') removeCab(a.num);
   if(a.action === 'rm-drv') rmDrv(parseInt(a.idx));
+  if(a.action === 'add-cab-troca') addCabTroca(a.id, a.type);
+  if(a.action === 'remove-cab-troca') removeCabTroca(a.id, a.type, parseInt(a.idx));
 });
 
 document.addEventListener('change', e => {

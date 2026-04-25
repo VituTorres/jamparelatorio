@@ -182,3 +182,17 @@ input[type=date].date-input:focus{border-color:var(--or)}
 .toast-icon{font-size:16px}
 @keyframes toastIn{to{opacity:1;transform:translateY(0)}}
 @keyframes toastOut{to{opacity:0;transform:translateY(10px)}}
+
+/* Estilos para Troca Dupla */
+.troca-box { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.troca-field { background: #f9f9f9; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
+.troca-field label { display: block; font-size: 11px; font-weight: bold; color: #666; margin-bottom: 4px; text-transform: uppercase; }
+.cab-chip.ret { background: #e53935; border-color: #c62828; color: #fff; }
+.cab-chip.ret button { color: #fff; }
+.cab-chip.ent { background: #2e7d32; border-color: #1b5e20; color: #fff; }
+.cab-chip.ent button { color: #fff; }
+.cab-tag.ret { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+.cab-tag.ent { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+.cab-row-troca { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.troca-col { font-size: 11px; display: flex; align-items: center; gap: 6px; }
+.troca-col strong { min-width: 60px; color: #666; }
